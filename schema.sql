@@ -1,0 +1,260 @@
+-- ============================================================
+-- REPLAYD — Postgres schema
+-- Run against your Supabase project via the SQL editor
+-- or psql: psql $DATABASE_URL -f schema.sql
+-- ============================================================
+
+-- Enable pgcrypto for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- ============================================================
+-- REFERENCE DATA (synced from football-data.org)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS competitions (
+  id          INTEGER     PRIMARY KEY,          -- football-data.org id
+  name        TEXT        NOT NULL,
+  code        TEXT        NOT NULL UNIQUE,      -- PL, CL, PD, BL1, SA, FL1
+  emblem_url  TEXT,
+  area_name   TEXT,                             -- England, Europe, etc.
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS teams (
+  id          INTEGER     PRIMARY KEY,          -- football-data.org id
+  name        TEXT        NOT NULL,
+  short_name  TEXT,
+  tla         TEXT,                             -- 3-letter abbreviation: ARS, MCI
+  crest_url   TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS seasons (
+  id               SERIAL      PRIMARY KEY,
+  competition_id   INTEGER     NOT NULL REFERENCES competitions(id),
+  year             INTEGER     NOT NULL,        -- e.g. 2024 for 2024/25
+  start_date       DATE        NOT NULL,
+  end_date         DATE        NOT NULL,
+  current_matchday INTEGER,
+  winner_id        INTEGER     REFERENCES teams(id),
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(competition_id, year)
+);
+
+CREATE TABLE IF NOT EXISTS matches (
+  id              INTEGER     PRIMARY KEY,      -- football-data.org id
+  competition_id  INTEGER     NOT NULL REFERENCES competitions(id),
+  season_id       INTEGER     REFERENCES seasons(id),
+  home_team_id    INTEGER     NOT NULL REFERENCES teams(id),
+  away_team_id    INTEGER     NOT NULL REFERENCES teams(id),
+  utc_date        TIMESTAMPTZ NOT NULL,
+  status          TEXT        NOT NULL,
+    -- SCHEDULED | TIMED | IN_PLAY | PAUSED | FINISHED
+    -- POSTPONED | SUSPENDED | CANCELLED
+  matchday        INTEGER,
+  stage           TEXT,
+    -- REGULAR_SEASON | GROUP_STAGE | ROUND_OF_16
+    -- QUARTER_FINALS | SEMI_FINALS | FINAL
+  home_score      INTEGER,
+  away_score      INTEGER,
+  home_score_ht   INTEGER,                     -- half-time
+  away_score_ht   INTEGER,
+  last_updated    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Join table so we can query "all teams in EPL this season" quickly
+CREATE TABLE IF NOT EXISTS competition_teams (
+  competition_id  INTEGER NOT NULL REFERENCES competitions(id),
+  season_id       INTEGER NOT NULL REFERENCES seasons(id),
+  team_id         INTEGER NOT NULL REFERENCES teams(id),
+  PRIMARY KEY (competition_id, season_id, team_id)
+);
+
+-- ============================================================
+-- USER DATA
+-- ============================================================
+
+-- Extends auth.users (Supabase Auth)
+CREATE TABLE IF NOT EXISTS profiles (
+  id              UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username        TEXT        UNIQUE NOT NULL,
+  display_name    TEXT,
+  bio             TEXT,
+  avatar_url      TEXT,
+  favourite_team_id INTEGER   REFERENCES teams(id),
+  is_private      BOOLEAN     DEFAULT FALSE,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Core action: logging a watched match
+CREATE TABLE IF NOT EXISTS match_logs (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  match_id         INTEGER     NOT NULL REFERENCES matches(id),
+  watched_date     DATE,                        -- when they watched (may differ from match date)
+  rating           NUMERIC(2,1)
+    CHECK (rating IS NULL OR (rating >= 0.5 AND rating <= 5.0 AND MOD(rating * 2, 1) = 0)),
+  review           TEXT,
+  is_rewatch       BOOLEAN     DEFAULT FALSE,
+  contains_spoilers BOOLEAN    DEFAULT FALSE,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, match_id)                     -- one log per match per user
+);
+
+CREATE TABLE IF NOT EXISTS lists (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title       TEXT        NOT NULL,
+  description TEXT,
+  is_ranked   BOOLEAN     DEFAULT FALSE,
+  is_public   BOOLEAN     DEFAULT TRUE,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS list_items (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  list_id     UUID        NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+  match_id    INTEGER     NOT NULL REFERENCES matches(id),
+  position    INTEGER,                          -- NULL if list is not ranked
+  note        TEXT,
+  added_at    TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(list_id, match_id)
+);
+
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id  UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  following_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (follower_id, following_id),
+  CHECK (follower_id != following_id)
+);
+
+-- ============================================================
+-- INDEXES
+-- ============================================================
+
+-- Matches: most common query patterns
+CREATE INDEX IF NOT EXISTS idx_matches_utc_date       ON matches(utc_date);
+CREATE INDEX IF NOT EXISTS idx_matches_competition    ON matches(competition_id, utc_date);
+CREATE INDEX IF NOT EXISTS idx_matches_status         ON matches(status) WHERE status IN ('SCHEDULED','TIMED','IN_PLAY','PAUSED');
+CREATE INDEX IF NOT EXISTS idx_matches_home_team      ON matches(home_team_id);
+CREATE INDEX IF NOT EXISTS idx_matches_away_team      ON matches(away_team_id);
+
+-- Logs: profile page, feed
+CREATE INDEX IF NOT EXISTS idx_logs_user              ON match_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_logs_match             ON match_logs(match_id);
+CREATE INDEX IF NOT EXISTS idx_logs_rating            ON match_logs(rating) WHERE rating IS NOT NULL;
+
+-- Lists
+CREATE INDEX IF NOT EXISTS idx_list_items_list        ON list_items(list_id, position);
+
+-- Follows: feed queries
+CREATE INDEX IF NOT EXISTS idx_follows_follower       ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following      ON follows(following_id);
+
+-- ============================================================
+-- ROW-LEVEL SECURITY
+-- ============================================================
+
+ALTER TABLE profiles     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE match_logs   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lists        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE list_items   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE follows      ENABLE ROW LEVEL SECURITY;
+
+-- Profiles: public read, own write
+CREATE POLICY "profiles_select_all"  ON profiles FOR SELECT USING (true);
+CREATE POLICY "profiles_insert_own"  ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "profiles_update_own"  ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "profiles_delete_own"  ON profiles FOR DELETE USING (auth.uid() = id);
+
+-- Match logs: public read (non-spoiler), own write
+CREATE POLICY "logs_select_all"      ON match_logs FOR SELECT USING (true);
+CREATE POLICY "logs_insert_own"      ON match_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "logs_update_own"      ON match_logs FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "logs_delete_own"      ON match_logs FOR DELETE USING (auth.uid() = user_id);
+
+-- Lists: public lists readable by all, private by owner only
+CREATE POLICY "lists_select_public"  ON lists FOR SELECT USING (is_public = true OR auth.uid() = user_id);
+CREATE POLICY "lists_insert_own"     ON lists FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "lists_update_own"     ON lists FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "lists_delete_own"     ON lists FOR DELETE USING (auth.uid() = user_id);
+
+-- List items inherit list visibility
+CREATE POLICY "list_items_select"    ON list_items FOR SELECT USING (
+  EXISTS (SELECT 1 FROM lists WHERE id = list_id AND (is_public = true OR user_id = auth.uid()))
+);
+CREATE POLICY "list_items_write"     ON list_items FOR ALL USING (
+  EXISTS (SELECT 1 FROM lists WHERE id = list_id AND user_id = auth.uid())
+);
+
+-- Follows: public read, own write
+CREATE POLICY "follows_select_all"   ON follows FOR SELECT USING (true);
+CREATE POLICY "follows_insert_own"   ON follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
+CREATE POLICY "follows_delete_own"   ON follows FOR DELETE USING (auth.uid() = follower_id);
+
+-- ============================================================
+-- FUNCTIONS & TRIGGERS
+-- ============================================================
+
+-- Auto-create profile on signup
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  INSERT INTO profiles (id, username, display_name, avatar_url)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'avatar_url'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Auto-update updated_at
+CREATE OR REPLACE FUNCTION touch_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER touch_profiles     BEFORE UPDATE ON profiles     FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER touch_match_logs   BEFORE UPDATE ON match_logs   FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER touch_lists        BEFORE UPDATE ON lists        FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER touch_matches      BEFORE UPDATE ON matches      FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER touch_competitions BEFORE UPDATE ON competitions FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER touch_teams        BEFORE UPDATE ON teams        FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+CREATE OR REPLACE TRIGGER touch_seasons      BEFORE UPDATE ON seasons      FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+-- ============================================================
+-- SEED: competitions we track
+-- ============================================================
+
+INSERT INTO competitions (id, name, code, area_name) VALUES
+  (2021, 'Premier League',    'PL',  'England'),
+  (2014, 'La Liga',           'PD',  'Spain'),
+  (2002, 'Bundesliga',        'BL1', 'Germany'),
+  (2019, 'Serie A',           'SA',  'Italy'),
+  (2015, 'Ligue 1',           'FL1', 'France'),
+  (2001, 'UEFA Champions League', 'CL', 'Europe')
+ON CONFLICT (id) DO UPDATE SET
+  name       = EXCLUDED.name,
+  code       = EXCLUDED.code,
+  area_name  = EXCLUDED.area_name,
+  updated_at = NOW();

@@ -1,0 +1,314 @@
+/*
+ * REPLAYD — Mobile styles
+ * Import this in your globals.css after your design tokens.
+ *
+ * Covers:
+ *   1. Safe-area / viewport fixes (iOS Safari, Android Chrome)
+ *   2. Bottom nav
+ *   3. Bottom sheet
+ *   4. Touch-friendly tap targets
+ *   5. Responsive layout utilities
+ *   6. PWA standalone tweaks
+ */
+
+/* ── 1. Viewport & safe-area fixes ───────────────────────────────────────────
+   iOS Safari 100vh bug: use dvh (dynamic viewport height) with fallback.
+   Add padding-bottom for the home indicator bar on iPhone.
+*/
+
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+
+  /* Bottom nav height + safe area */
+  --bottom-nav-height: 56px;
+  --bottom-nav-total:  calc(var(--bottom-nav-height) + var(--safe-bottom));
+}
+
+/* Full-height screens that account for dynamic browser chrome */
+.h-screen-dvh {
+  height: 100vh;          /* fallback */
+  height: 100dvh;
+}
+
+/* Main content area — leaves room for bottom nav on mobile */
+.main-content {
+  padding-bottom: var(--bottom-nav-total);
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    padding-bottom: 0;
+  }
+}
+
+/* Prevent text-size adjustment on orientation change (iOS) */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Smooth momentum scrolling on iOS */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Remove tap highlight on Android Chrome */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── 2. Bottom nav ──────────────────────────────────────────────────────────── */
+
+.bottom-nav {
+  position: fixed;
+  bottom:   0;
+  left:     0;
+  right:    0;
+  z-index:  50;
+
+  display:         flex;
+  align-items:     stretch;
+  justify-content: space-around;
+
+  height:          var(--bottom-nav-height);
+  padding-bottom:  var(--safe-bottom);
+  padding-left:    var(--safe-left);
+  padding-right:   var(--safe-right);
+
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  border-top: 1px solid var(--border);
+}
+
+/* Hide on tablet and up — use sidebar nav there */
+@media (min-width: 768px) {
+  .bottom-nav { display: none; }
+}
+
+.bottom-nav__item {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             2px;
+  flex:            1;
+
+  color:           var(--muted);
+  font-size:       0.625rem;  /* 10px */
+  font-weight:     500;
+  letter-spacing:  0.04em;
+  text-transform:  uppercase;
+
+  /* Minimum tap target: 44×44px (Apple HIG) */
+  min-height:      44px;
+  padding:         4px 8px;
+
+  border-radius:   8px;
+  transition:      color 150ms ease;
+
+  /* Remove default link decoration */
+  text-decoration: none;
+}
+
+.bottom-nav__item:active {
+  background: var(--green-dim);
+}
+
+.bottom-nav__item--active {
+  color: var(--green);
+}
+
+/* ── 3. Bottom sheet ────────────────────────────────────────────────────────── */
+
+.bottom-sheet__backdrop {
+  position: fixed;
+  inset:    0;
+  z-index:  60;
+
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+
+  animation: fadeIn 200ms ease;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom:   0;
+  left:     0;
+  right:    0;
+  z-index:  70;
+
+  display:        flex;
+  flex-direction: column;
+
+  background:    var(--surface);
+  border-radius: 20px 20px 0 0;
+  border-top:    1px solid var(--border);
+
+  /* Account for home indicator */
+  padding-bottom: var(--safe-bottom);
+
+  /* Prevent overscroll from dismissing on some Android browsers */
+  overscroll-behavior: contain;
+
+  animation:  slideUp 300ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Touch-action: allow vertical pan for drag dismiss,
+     but not lateral swipe (which should scroll content) */
+  touch-action: pan-y;
+}
+
+.bottom-sheet__handle-area {
+  display:         flex;
+  justify-content: center;
+  padding:         10px 0 4px;
+  cursor:          grab;
+  /* Extend touch target above the visible handle */
+  margin-top:      -4px;
+}
+
+.bottom-sheet__handle-area:active {
+  cursor: grabbing;
+}
+
+.bottom-sheet__handle {
+  width:         40px;
+  height:        4px;
+  border-radius: 2px;
+  background:    var(--muted);
+}
+
+.bottom-sheet__header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         8px 20px 12px;
+  border-bottom:   1px solid var(--border);
+}
+
+.bottom-sheet__title {
+  font-size:   1rem;
+  font-weight: 600;
+  color:       var(--white);
+}
+
+.bottom-sheet__close {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+
+  width:  32px;
+  height: 32px;
+
+  border:        none;
+  border-radius: 50%;
+  background:    var(--surface3);
+  color:         var(--muted);
+  cursor:        pointer;
+
+  transition: background 150ms;
+}
+
+.bottom-sheet__close:active {
+  background: var(--muted2);
+}
+
+.bottom-sheet__content {
+  flex:             1;
+  overflow-y:       auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px 20px;
+}
+
+/* ── 4. Touch-friendly adjustments ─────────────────────────────────────────── */
+
+/* Buttons and interactive elements get a bigger tap zone */
+button,
+[role="button"],
+a {
+  min-height: 44px;
+  min-width:  44px;
+}
+
+/* Input fields: prevent iOS zoom on focus (needs ≥16px font) */
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
+}
+
+/* ── 5. Responsive layout utilities ──────────────────────────────────────────
+   Use these in your JSX className props.
+*/
+
+/* Card grid: 1 col mobile → 2 cols tablet → 3+ cols desktop */
+.match-grid {
+  display:               grid;
+  grid-template-columns: 1fr;
+  gap:                   12px;
+}
+
+@media (min-width: 480px) {
+  .match-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .match-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap:                   16px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .match-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Match poster: slightly taller on mobile for thumb browsing */
+.match-poster {
+  aspect-ratio: 2/3;
+}
+
+@media (max-width: 479px) {
+  .match-poster {
+    aspect-ratio: 3/4;
+  }
+}
+
+/* ── 6. PWA standalone tweaks ───────────────────────────────────────────────── */
+
+/* When running as installed PWA, add status bar padding at top */
+@media (display-mode: standalone) {
+  body {
+    padding-top: var(--safe-top);
+  }
+
+  /* Show a custom title bar area instead of browser chrome */
+  .app-header {
+    padding-top: calc(8px + var(--safe-top));
+  }
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
