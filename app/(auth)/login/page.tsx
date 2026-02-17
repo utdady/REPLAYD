@@ -1,14 +1,26 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { login } from "@/app/(auth)/actions";
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
+  const error = searchParams?.error;
+
   return (
     <div className="bg-surface border border-border rounded-card p-8">
       <Link href="/" className="font-display text-xl tracking-[0.05em] text-white block text-center mb-8">
         REPLAY<span className="text-green">D</span>
       </Link>
       <h1 className="font-display text-2xl tracking-wide text-center mb-6">Log in</h1>
-      <form className="space-y-4">
+      {error && (
+        <div className="mb-4 p-3 rounded-badge bg-red/10 border border-red/30 text-red text-sm font-sans">
+          {decodeURIComponent(error)}
+        </div>
+      )}
+      <form action={login} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
             Email
@@ -18,6 +30,7 @@ export default function LoginPage() {
             type="email"
             name="email"
             autoComplete="email"
+            required
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
             placeholder="you@example.com"
           />
@@ -31,6 +44,7 @@ export default function LoginPage() {
             type="password"
             name="password"
             autoComplete="current-password"
+            required
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
           />
         </div>
