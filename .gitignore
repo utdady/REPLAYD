@@ -18,6 +18,10 @@
 .DS_Store
 *.pem
 
+# OAuth secrets (never commit these!)
+*client_secret*.json
+*credentials*.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
