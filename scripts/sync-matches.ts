@@ -9,8 +9,7 @@
  *   DATABASE_URL, FOOTBALL_DATA_API_KEY
  *
  * Optional:
- *   SYNC_DAYS_BACK   (default: 7)
- *   SYNC_DAYS_AHEAD  (default: 14)
+ *   SYNC_SEASON      (default: 2024) — season year to sync (2024 = 2024/25)
  *   DRY_RUN          (default: false)
  *   DEBUG            (default: false)
  */
@@ -30,8 +29,8 @@ const API_KEY  = process.env.FOOTBALL_DATA_API_KEY ?? "";
 const DRY_RUN  = process.env.DRY_RUN === "true";
 const DEBUG    = process.env.DEBUG === "true";
 
-const DAYS_BACK  = parseInt(process.env.SYNC_DAYS_BACK  ?? "7",  10);
-const DAYS_AHEAD = parseInt(process.env.SYNC_DAYS_AHEAD ?? "14", 10);
+// Season year to sync (2024 = 2024/25). We only sync this one season for now.
+const SYNC_SEASON = parseInt(process.env.SYNC_SEASON ?? "2024", 10);
 
 // football-data.org competition IDs we track
 const COMPETITION_IDS = [2021, 2014, 2002, 2019, 2015, 2001];
@@ -93,10 +92,6 @@ function debug(...args: unknown[]) {
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
 }
 
 async function apiFetch<T>(path: string): Promise<T> {
@@ -221,9 +216,9 @@ async function linkTeamToSeason(
 async function syncCompetition(pool: Pool, competitionId: number) {
   log(`── Competition ${competitionId}`);
 
-  // 1. Fetch teams (also gives us season metadata)
+  // 1. Fetch teams (also gives us season metadata) for the season we sync
   const teamsData = await apiFetch<FDTeamsResponse>(
-    `/competitions/${competitionId}/teams?season=2024`
+    `/competitions/${competitionId}/teams?season=${SYNC_SEASON}`
   );
   await sleep(RATE_LIMIT_MS);
 
@@ -245,17 +240,12 @@ async function syncCompetition(pool: Pool, competitionId: number) {
   }
   log(`   Upserted ${teamsData.teams.length} teams`);
 
-  // 3. Fetch matches in date window
-  const from = new Date();
-  from.setDate(from.getDate() - DAYS_BACK);
-  const to = new Date();
-  to.setDate(to.getDate() + DAYS_AHEAD);
-
-  const path = `/competitions/${competitionId}/matches?dateFrom=${isoDate(from)}&dateTo=${isoDate(to)}`;
+  // 3. Fetch all matches for this season (2024/25) from the API
+  const path = `/competitions/${competitionId}/matches?season=${SYNC_SEASON}`;
   const matchData = await apiFetch<FDMatchesResponse>(path);
   await sleep(RATE_LIMIT_MS);
 
-  log(`   Found ${matchData.matches.length} matches in window`);
+  log(`   Found ${matchData.matches.length} matches for season ${SYNC_SEASON}`);
 
   let upserted = 0;
   for (const m of matchData.matches) {
@@ -273,7 +263,7 @@ async function syncCompetition(pool: Pool, competitionId: number) {
 
 async function main() {
   log("REPLAYD sync starting");
-  log(`Window: -${DAYS_BACK} days … +${DAYS_AHEAD} days`);
+  log(`Season: ${SYNC_SEASON} (${SYNC_SEASON}/${String(SYNC_SEASON + 1).slice(-2)})`);
   if (DRY_RUN) log("DRY RUN — no DB writes");
 
   if (!process.env.DATABASE_URL) {

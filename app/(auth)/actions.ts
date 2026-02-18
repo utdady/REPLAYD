@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { query } from "@/lib/db";
 
 export async function login(formData: FormData) {
   try {
@@ -32,18 +33,45 @@ export async function login(formData: FormData) {
   }
 }
 
+export async function checkUsername(username: string): Promise<{ available: boolean }> {
+  if (!username || username.trim().length === 0) {
+    return { available: false };
+  }
+  const sanitized = username.trim().toLowerCase();
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(sanitized)) {
+    return { available: false };
+  }
+  const { rows } = await query<{ count: number }>(
+    "SELECT COUNT(*)::int as count FROM profiles WHERE LOWER(username) = $1",
+    [sanitized]
+  );
+  return { available: rows[0]?.count === 0 };
+}
+
 export async function signup(formData: FormData) {
   const supabase = await createClient();
 
-  const email = formData.get("email") as string;
+  const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
+  const username = (formData.get("username") as string)?.trim();
 
-  if (!email || !password) {
+  if (!email || !password || !username) {
     redirect("/signup?error=Please+fill+in+all+fields");
   }
 
   if (password.length < 8) {
     redirect("/signup?error=Password+must+be+at+least+8+characters");
+  }
+
+  // Validate username format
+  if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+    redirect("/signup?error=Username+must+be+3-30+characters+and+contain+only+letters%2C+numbers%2C+and+underscores");
+  }
+
+  // Check username availability
+  const { available } = await checkUsername(username);
+  if (!available) {
+    redirect("/signup?error=Username+is+already+taken");
   }
 
   // Use environment variable or default to localhost:3001 for dev
@@ -54,6 +82,9 @@ export async function signup(formData: FormData) {
     password,
     options: {
       emailRedirectTo: `${siteUrl}/auth/callback`,
+      data: {
+        username: username.toLowerCase(), // Store lowercase for consistency
+      },
     },
   });
 

@@ -1,17 +1,63 @@
+"use client";
+
+import { useState, useTransition, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { signup } from "@/app/(auth)/actions";
+import { signup, checkUsername } from "@/app/(auth)/actions";
 
-type SearchParams = { error?: string; message?: string } | Promise<{ error?: string; message?: string }>;
+export default function SignupPage() {
+  const searchParams = useSearchParams();
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [isPending, startTransition] = useTransition();
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-export default async function SignupPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = searchParams instanceof Promise ? await searchParams : searchParams;
-  const error = params?.error;
-  const message = params?.message;
+  const error = searchParams.get("error");
+  const message = searchParams.get("message");
+
+  const handleUsernameChange = (value: string) => {
+    setUsername(value);
+    const trimmed = value.trim();
+    
+    if (trimmed.length === 0) {
+      setUsernameStatus("idle");
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(trimmed)) {
+      setUsernameStatus("invalid");
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+      return;
+    }
+
+    // Clear previous timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Debounce the check
+    debounceTimer.current = setTimeout(async () => {
+      setUsernameStatus("checking");
+      const { available } = await checkUsername(trimmed);
+      setUsernameStatus(available ? "available" : "taken");
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="bg-surface border border-border rounded-card p-8">
@@ -29,7 +75,43 @@ export default async function SignupPage({
           {decodeURIComponent(message)}
         </div>
       )}
-      <form action={signup} className="space-y-4">
+      <form action={(formData) => startTransition(() => signup(formData))} className="space-y-4">
+        <div>
+          <label htmlFor="username" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
+            Username
+          </label>
+          <input
+            id="username"
+            type="text"
+            name="username"
+            autoComplete="username"
+            required
+            minLength={3}
+            maxLength={30}
+            pattern="[a-zA-Z0-9_]{3,30}"
+            value={username}
+            onChange={(e) => handleUsernameChange(e.target.value)}
+            className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
+            placeholder="johndoe"
+          />
+          <div className="mt-1 min-h-[16px]">
+            {usernameStatus === "checking" && (
+              <p className="text-xs text-muted">Checking...</p>
+            )}
+            {usernameStatus === "available" && (
+              <p className="text-xs text-green">✓ Username available</p>
+            )}
+            {usernameStatus === "taken" && (
+              <p className="text-xs text-red">✗ Username already taken</p>
+            )}
+            {usernameStatus === "invalid" && username.trim().length > 0 && (
+              <p className="text-xs text-red">3-30 characters, letters, numbers, and underscores only</p>
+            )}
+            {usernameStatus === "idle" && username.trim().length === 0 && (
+              <p className="text-xs text-muted2">3-30 characters</p>
+            )}
+          </div>
+        </div>
         <div>
           <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
             Email
@@ -59,8 +141,8 @@ export default async function SignupPage({
           />
           <p className="text-xs text-muted2 mt-1">At least 8 characters</p>
         </div>
-        <Button type="submit" variant="primary" className="w-full">
-          Sign up
+        <Button type="submit" variant="primary" className="w-full" disabled={isPending || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}>
+          {isPending ? "Signing up..." : "Sign up"}
         </Button>
       </form>
       <div className="mt-4 pt-4 border-t border-border">

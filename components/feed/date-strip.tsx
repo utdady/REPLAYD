@@ -6,35 +6,74 @@ import { addDays, format, isToday, startOfDay } from "date-fns";
 export interface DateStripProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
+  /** Selected season year (e.g. 2024 for 2024/25). Optional; if provided, shows year dropdown. */
+  selectedYear?: number;
+  onSelectYear?: (year: number) => void;
+  /** Years to show in dropdown (e.g. [2023, 2024, 2025]). Defaults to current ± 1. */
+  yearOptions?: number[];
   className?: string;
 }
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function DateStrip({ selectedDate, onSelectDate, className = "" }: DateStripProps) {
+export function DateStrip({
+  selectedDate,
+  onSelectDate,
+  selectedYear,
+  onSelectYear,
+  yearOptions,
+  className = "",
+}: DateStripProps) {
+  const currentYear = new Date().getFullYear();
+  const years = yearOptions ?? [currentYear - 1, currentYear, currentYear + 1];
+  const year = selectedYear ?? currentYear;
+
   const days = useMemo(() => {
     const today = startOfDay(new Date());
-    return Array.from({ length: 7 }, (_, i) => addDays(today, i - 3));
+    const start = addDays(today, -3);
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, []);
 
   return (
-    <div className={`flex gap-0 px-4 pb-2 overflow-x-auto scrollbar-hide ${className}`}>
-      {days.map((d) => {
-        const active = isToday(d) || (selectedDate && isToday(selectedDate) && d.getTime() === selectedDate.getTime());
-        return (
-          <button
-            key={d.toISOString()}
-            type="button"
-            onClick={() => onSelectDate(d)}
-            className={`shrink-0 flex flex-col items-center py-2 px-3 rounded-md min-w-[52px] transition-colors ${
-              active ? "bg-green-dim text-green" : "text-muted hover:text-white"
-            }`}
+    <div className={`flex items-stretch gap-2 px-4 pb-2 overflow-x-auto scrollbar-hide ${className}`}>
+      {onSelectYear && (
+        <div className="shrink-0 flex flex-col justify-center">
+          <label htmlFor="feed-year" className="text-[10px] font-mono uppercase tracking-wider text-muted mb-0.5">
+            Season
+          </label>
+          <select
+            id="feed-year"
+            value={year}
+            onChange={(e) => onSelectYear(Number(e.target.value))}
+            className="h-9 min-w-[72px] rounded-md border border-border2 bg-surface3 px-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-green"
+            aria-label="Filter by season year"
           >
-            <span className="text-[10px] font-mono uppercase tracking-wider">{DOW[d.getDay()]}</span>
-            <span className="text-sm font-mono font-medium">{format(d, "d")}</span>
-          </button>
-        );
-      })}
+            {years.map((y) => (
+              <option key={y} value={y} className="bg-surface2 text-white">
+                {y}/{String(y + 1).slice(-2)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div className="flex gap-0 flex-1 min-w-0">
+        {days.map((d) => {
+          const active = isToday(d) || (selectedDate && selectedDate.getTime() === d.getTime());
+          return (
+            <button
+              key={d.toISOString()}
+              type="button"
+              onClick={() => onSelectDate(d)}
+              className={`shrink-0 flex flex-col items-center py-2 px-3 rounded-md min-w-[52px] transition-colors ${
+                active ? "bg-green-dim text-green" : "text-muted hover:text-white"
+              }`}
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider">{DOW[d.getDay()]}</span>
+              <span className="text-sm font-mono font-medium">{format(d, "d")}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -205,18 +205,44 @@ CREATE POLICY "follows_delete_own"   ON follows FOR DELETE USING (auth.uid() = f
 -- FUNCTIONS & TRIGGERS
 -- ============================================================
 
--- Auto-create profile on signup
+-- Auto-create profile on signup.
+-- SECURITY DEFINER runs as function owner (run this schema as postgres so RLS is bypassed).
+-- Ensures unique username to avoid "database error saving new user" when two users share the same base name.
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  base_username text;
+  new_username text;
+  suffix int := 0;
 BEGIN
+  base_username := COALESCE(
+    NULLIF(trim(LOWER(NEW.raw_user_meta_data->>'username')), ''),
+    LOWER(split_part(COALESCE(NEW.email, ''), '@', 1))
+  );
+  IF base_username IS NULL OR base_username = '' THEN
+    base_username := 'user';
+  END IF;
+  -- Sanitize and limit length (alphanumeric + underscore only)
+  base_username := regexp_replace(substring(base_username from 1 for 30), '[^a-zA-Z0-9_]', '_', 'g');
+  IF base_username = '' THEN
+    base_username := 'user';
+  END IF;
+
+  new_username := base_username;
+  WHILE EXISTS (SELECT 1 FROM profiles WHERE username = new_username) LOOP
+    suffix := suffix + 1;
+    new_username := base_username || '_' || suffix;
+  END LOOP;
+
   INSERT INTO profiles (id, username, display_name, avatar_url)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    new_username,
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'avatar_url'
-  )
-  ON CONFLICT (id) DO NOTHING;
+  );
   RETURN NEW;
 END;
 $$;
