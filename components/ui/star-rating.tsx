@@ -24,6 +24,7 @@ export function StarRating({
   const px = sizeMap[size];
   const [hoverValue, setHoverValue] = React.useState<number | null>(null);
   const display = hoverValue ?? value ?? 0;
+  const baseId = React.useId();
 
   const handleClick = (clickedValue: number) => {
     if (readonly || !onChange) return;
@@ -39,7 +40,7 @@ export function StarRating({
       {[1, 2, 3, 4, 5].map((star) => {
         const filled = display >= star;
         const half = display >= star - 0.5 && display < star;
-        const uniqueId = React.useId();
+        const uniqueId = `${baseId}-${star}`;
         return (
           <div key={star} className="relative inline-block" style={{ width: px, height: px }}>
             {/* Left half clickable area (half star) */}
