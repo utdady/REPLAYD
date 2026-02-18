@@ -53,8 +53,9 @@ export async function middleware(request: NextRequest) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "Please+log+in+to+continue");
     const redirectRes = NextResponse.redirect(loginUrl);
-    response.cookies.getAll().forEach(({ name, value, options }) => {
-      redirectRes.cookies.set(name, value, options);
+    response.cookies.getAll().forEach((cookie) => {
+      const { name, value, ...opts } = cookie;
+      redirectRes.cookies.set(name, value, opts);
     });
     return redirectRes;
   }
