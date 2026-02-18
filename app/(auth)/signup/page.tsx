@@ -2,13 +2,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { signup } from "@/app/(auth)/actions";
 
-export default function SignupPage({
+type SearchParams = { error?: string; message?: string } | Promise<{ error?: string; message?: string }>;
+
+export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: { error?: string; message?: string };
+  searchParams: SearchParams;
 }) {
-  const error = searchParams?.error;
-  const message = searchParams?.message;
+  const params = searchParams instanceof Promise ? await searchParams : searchParams;
+  const error = params?.error;
+  const message = params?.message;
 
   return (
     <div className="bg-surface border border-border rounded-card p-8">

@@ -55,6 +55,12 @@ Use your logo/brand colors. These are required for PWA install prompts.
 3. **Auth**: Sign up → check `profiles` table has your user
 4. **PWA**: Open on mobile → browser should show "Add to Home Screen" prompt
 
+## Troubleshooting
+
+- **Sync fails (ENOTFOUND / DB connection):** Use Supabase **Session pooler** URI in `DATABASE_URL` — see `SYNC-TROUBLESHOOTING.md`
+- **Login/signup issues (rate limits, email):** See `AUTH-TROUBLESHOOTING.md`, `RATE-LIMITS.md`, `SUPABASE-EMAIL-SETUP.md`
+- **Mobile / PWA testing:** See `MOBILE-TESTING.md`
+
 ## Next Steps
 
 - Wire HomeFeed to real match data from DB

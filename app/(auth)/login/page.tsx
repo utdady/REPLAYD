@@ -2,12 +2,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { login } from "@/app/(auth)/actions";
 
-export default function LoginPage({
+type SearchParams = { error?: string } | Promise<{ error?: string }>;
+
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: SearchParams;
 }) {
-  const error = searchParams?.error;
+  const params = searchParams instanceof Promise ? await searchParams : searchParams;
+  const error = params?.error;
 
   return (
     <div className="bg-surface border border-border rounded-card p-8">

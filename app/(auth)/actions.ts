@@ -5,23 +5,31 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function login(formData: FormData) {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+    const email = (formData.get("email") as string)?.trim();
+    const password = formData.get("password") as string;
 
-  if (!email || !password) {
-    redirect("/login?error=Please+fill+in+all+fields");
+    if (!email || !password) {
+      redirect("/login?error=" + encodeURIComponent("Please fill in email and password"));
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      redirect("/login?error=" + encodeURIComponent(error.message));
+    }
+
+    revalidatePath("/", "layout");
+    redirect("/");
+  } catch (e) {
+    if (e && typeof e === "object" && "digest" in e && typeof (e as { digest?: string }).digest === "string") {
+      throw e; // Next.js redirect() throws a special error
+    }
+    const message = e instanceof Error ? e.message : "Something went wrong";
+    redirect("/login?error=" + encodeURIComponent(message));
   }
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath("/", "layout");
-  redirect("/");
 }
 
 export async function signup(formData: FormData) {
@@ -38,11 +46,14 @@ export async function signup(formData: FormData) {
     redirect("/signup?error=Password+must+be+at+least+8+characters");
   }
 
+  // Use environment variable or default to localhost:3001 for dev
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
+  
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
+      emailRedirectTo: `${siteUrl}/auth/callback`,
     },
   });
 

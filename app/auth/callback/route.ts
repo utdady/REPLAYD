@@ -5,15 +5,35 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
+  const error = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
-    }
+  // Handle OAuth errors
+  if (error) {
+    const errorMsg = errorDescription 
+      ? `${error}: ${errorDescription}` 
+      : error;
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(errorMsg)}`
+    );
   }
 
-  // If something went wrong, send them to login with an error
-  return NextResponse.redirect(`${origin}/login?error=Could+not+confirm+account`);
+  if (!code) {
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent("No confirmation code provided")}`
+    );
+  }
+
+  const supabase = await createClient();
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (exchangeError) {
+    console.error("Auth callback error:", exchangeError);
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(exchangeError.message || "Could not confirm account")}`
+    );
+  }
+
+  // Success - redirect to home
+  return NextResponse.redirect(`${origin}${next}`);
 }

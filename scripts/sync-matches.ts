@@ -5,7 +5,7 @@
  * Usage:
  *   npx tsx scripts/sync-matches.ts
  *
- * Env vars required (see .env.example):
+ * Loads .env.local from project root. Env vars required (see .env.example):
  *   DATABASE_URL, FOOTBALL_DATA_API_KEY
  *
  * Optional:
@@ -14,6 +14,12 @@
  *   DRY_RUN          (default: false)
  *   DEBUG            (default: false)
  */
+
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// Load .env.local from project root; override so file always wins over existing env
+config({ path: resolve(process.cwd(), ".env.local"), override: true });
 
 import { Pool } from "pg";
 
@@ -274,7 +280,33 @@ async function main() {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 3 });
+  // Parse DATABASE_URL manually to handle # in password
+  // Format: postgresql://user:pass@host:port/dbname
+  let dbUrl = process.env.DATABASE_URL;
+  if (dbUrl.startsWith('"') && dbUrl.endsWith('"')) {
+    dbUrl = dbUrl.slice(1, -1);
+  }
+  
+  // Decode URL-encoded password (%23 → #)
+  dbUrl = decodeURIComponent(dbUrl);
+  
+  // Parse manually (can't use URL constructor because # is fragment identifier)
+  // Supports: postgresql:// or postgres:// (Supabase pooler uses postgres://)
+  const match = dbUrl.match(/^postgres(?:ql)?:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/);
+  if (!match) {
+    throw new Error(`Invalid DATABASE_URL format: ${dbUrl.substring(0, 50)}...`);
+  }
+  
+  const [, user, password, host, port, database] = match;
+  const pool = new Pool({
+    host,
+    port: parseInt(port, 10),
+    database,
+    user,
+    password, // This will have # decoded from %23
+    max: 3,
+    ssl: { rejectUnauthorized: false }, // Supabase requires SSL
+  });
 
   try {
     for (const compId of COMPETITION_IDS) {

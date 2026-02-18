@@ -18,6 +18,9 @@ function getPool(): Pool {
   const pool = new Pool({
     connectionString,
     max: 10,
+    ssl: process.env.NODE_ENV === "production" 
+      ? { rejectUnauthorized: false } // Supabase requires SSL
+      : { rejectUnauthorized: false }, // Also in dev for Supabase
   });
 
   if (process.env.NODE_ENV === "development") {

@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/log", "/activity", "/profile", "/users/me"];
+const AUTH_PAGES = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,10 +15,13 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // If Supabase isn't configured yet, pass through
   if (!supabaseUrl || !supabaseAnonKey) {
     return response;
   }
+
+  // Skip auth logic on login/signup so we never redirect away from them
+  // unless we're sure the user is logged in (avoids redirect loops from stale cookies)
+  const isAuthPage = AUTH_PAGES.includes(pathname);
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -38,19 +42,24 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redirect to login if trying to access protected routes without auth
+  // On login/signup: always show the page, never redirect (avoids redirect loop from stale cookies)
+  if (isAuthPage) {
+    return response;
+  }
+
+  // Protected routes: require login
   const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
   if (isProtected && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "Please+log+in+to+continue");
-    return NextResponse.redirect(loginUrl);
+    const redirectRes = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach(({ name, value, options }) => {
+      redirectRes.cookies.set(name, value, options);
+    });
+    return redirectRes;
   }
 
-  // Redirect logged-in users away from auth pages
-  if (user && (pathname === "/login" || pathname === "/signup")) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
+  // Logged-in users on auth pages would redirect to / — disabled to prevent loops; they can use nav to go home
   return response;
 }
 
