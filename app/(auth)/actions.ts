@@ -33,7 +33,19 @@ export async function login(formData: FormData) {
   }
 }
 
-export async function checkUsername(username: string): Promise<{ available: boolean }> {
+export async function checkEmailExists(email: string): Promise<{ exists: boolean }> {
+  if (!email || !email.trim()) {
+    return { exists: false };
+  }
+  const supabase = await createClient();
+  const { data } = await supabase.auth.admin.listUsers();
+  // Note: admin.listUsers() requires service role key. For client-side, we'll check via signup error instead.
+  // This is a server action, so we can use admin if service role is available.
+  // Fallback: check via signup attempt error message
+  return { exists: false }; // Will be handled via signup error
+}
+
+export async function checkUsername(username: string): Promise<{ available: boolean; suggestions?: string[] }> {
   if (!username || username.trim().length === 0) {
     return { available: false };
   }
@@ -45,7 +57,69 @@ export async function checkUsername(username: string): Promise<{ available: bool
     "SELECT COUNT(*)::int as count FROM profiles WHERE LOWER(username) = $1",
     [sanitized]
   );
-  return { available: rows[0]?.count === 0 };
+  const available = rows[0]?.count === 0;
+  
+  if (!available) {
+    // Generate suggestions
+    const suggestions: string[] = [];
+    for (let i = 1; i <= 5; i++) {
+      const candidate = `${sanitized}_${i}`;
+      const { rows: checkRows } = await query<{ count: number }>(
+        "SELECT COUNT(*)::int as count FROM profiles WHERE LOWER(username) = $1",
+        [candidate]
+      );
+      if (checkRows[0]?.count === 0) {
+        suggestions.push(candidate);
+        if (suggestions.length >= 3) break;
+      }
+    }
+    // If still need more, try with random suffix
+    if (suggestions.length < 3) {
+      for (let i = 0; i < 10 && suggestions.length < 3; i++) {
+        const random = Math.floor(Math.random() * 1000);
+        const candidate = `${sanitized}${random}`;
+        if (candidate.length <= 30) {
+          const { rows: checkRows } = await query<{ count: number }>(
+            "SELECT COUNT(*)::int as count FROM profiles WHERE LOWER(username) = $1",
+            [candidate]
+          );
+          if (checkRows[0]?.count === 0 && !suggestions.includes(candidate)) {
+            suggestions.push(candidate);
+          }
+        }
+      }
+    }
+    return { available: false, suggestions };
+  }
+  
+  return { available: true };
+}
+
+export async function signInWithGoogle() {
+  const supabase = await createClient();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
+  
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${siteUrl}/auth/callback`,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    return;
+  }
+
+  if (data?.url) {
+    redirect(data.url);
+  } else {
+    redirect("/login?error=Failed+to+initiate+Google+sign-in");
+  }
 }
 
 export async function signup(formData: FormData) {
@@ -69,9 +143,13 @@ export async function signup(formData: FormData) {
   }
 
   // Check username availability
-  const { available } = await checkUsername(username);
-  if (!available) {
-    redirect("/signup?error=Username+is+already+taken");
+  const usernameCheck = await checkUsername(username);
+  if (!usernameCheck.available) {
+    const suggestions = usernameCheck.suggestions || [];
+    const suggestionsParam = suggestions.length > 0 
+      ? `&suggestions=${encodeURIComponent(JSON.stringify(suggestions))}`
+      : "";
+    redirect(`/signup?error=Username+is+already+taken${suggestionsParam}&username=${encodeURIComponent(username)}`);
   }
 
   // Use environment variable or default to localhost:3001 for dev
@@ -89,6 +167,10 @@ export async function signup(formData: FormData) {
   });
 
   if (error) {
+    // Check if email already exists
+    if (error.message.includes("already registered") || error.message.includes("already exists") || error.message.includes("User already registered")) {
+      redirect(`/signup?error=This+email+is+already+registered.+Try+logging+in+instead+or+reset+your+password&email=${encodeURIComponent(email)}`);
+    }
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 

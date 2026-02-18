@@ -1,16 +1,17 @@
+"use client";
+
+import { useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { login } from "@/app/(auth)/actions";
+import { login, signInWithGoogle } from "@/app/(auth)/actions";
 
-type SearchParams = { error?: string } | Promise<{ error?: string }>;
-
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = searchParams instanceof Promise ? await searchParams : searchParams;
-  const error = params?.error;
+export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  const [isGooglePending, startGoogleTransition] = useTransition();
+  const error = searchParams.get("error");
+  const email = searchParams.get("email");
 
   return (
     <div className="bg-surface border border-border rounded-card p-8">
@@ -23,7 +24,7 @@ export default async function LoginPage({
           {decodeURIComponent(error)}
         </div>
       )}
-      <form action={login} className="space-y-4">
+      <form action={(formData) => startTransition(() => login(formData))} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
             Email
@@ -36,6 +37,7 @@ export default async function LoginPage({
             required
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
             placeholder="you@example.com"
+            defaultValue={email || ""}
           />
         </div>
         <div>
@@ -51,17 +53,21 @@ export default async function LoginPage({
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
           />
         </div>
-        <Button type="submit" variant="primary" className="w-full">
-          Log in
+        <Button type="submit" variant="primary" className="w-full" disabled={isPending}>
+          {isPending ? "Logging in..." : "Log in"}
         </Button>
       </form>
       <div className="mt-4 pt-4 border-t border-border">
-        <button
-          type="button"
-          className="w-full rounded-btn px-4 py-2 text-sm font-sans bg-transparent border border-border text-white hover:border-border2 hover:bg-surface3 transition-colors"
-        >
-          Continue with Google
-        </button>
+        <form action={() => startGoogleTransition(() => signInWithGoogle())}>
+          <Button
+            type="submit"
+            variant="outline"
+            className="w-full"
+            disabled={isGooglePending}
+          >
+            {isGooglePending ? "Connecting..." : "Continue with Google"}
+          </Button>
+        </form>
       </div>
       <p className="text-center text-sm text-muted mt-6">
         Don&apos;t have an account?{" "}
