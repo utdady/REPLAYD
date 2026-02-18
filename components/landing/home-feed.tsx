@@ -38,14 +38,28 @@ function formatTime(utcIso: string): string {
 
 export function HomeFeed() {
   const currentYear = new Date().getFullYear();
+  // Default to 2024 (where your data is) instead of current year
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [activeComp, setActiveComp] = useState("All");
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedYear, setSelectedYear] = useState<number>(FEED_SEASON_YEAR); // Default to 2024
   const [matches, setMatches] = useState<Awaited<ReturnType<typeof getMatchesForFeed>>>([]);
   const [loading, setLoading] = useState(true);
 
   const dateYmd = format(selectedDate, "yyyy-MM-dd");
   const isToday = selectedDate.getTime() === startOfDay(new Date()).getTime();
+
+  // When year changes, if selectedDate is not in that year, adjust it to today (if today is in that year) or Jan 1 of that year
+  useEffect(() => {
+    const selectedDateYear = selectedDate.getFullYear();
+    if (selectedDateYear !== selectedYear) {
+      const today = new Date();
+      if (today.getFullYear() === selectedYear) {
+        setSelectedDate(startOfDay(today));
+      } else {
+        setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
+      }
+    }
+  }, [selectedYear]); // Only depend on selectedYear, not selectedDate to avoid loops
 
   useEffect(() => {
     setLoading(true);

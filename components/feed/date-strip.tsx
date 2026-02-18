@@ -28,12 +28,13 @@ export function DateStrip({
   const years = yearOptions ?? [currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
   const year = selectedYear ?? currentYear;
 
-  // Generate 30 days centered around selectedDate (or today if no selection)
+  // Generate 30 days centered around today (fixed reference, not selectedDate)
+  // This prevents the strip from jumping when clicking dates
   const days = useMemo(() => {
-    const center = selectedDate || startOfDay(new Date());
-    const start = addDays(center, -15); // 15 days before
+    const today = startOfDay(new Date());
+    const start = addDays(today, -15); // 15 days before today
     return Array.from({ length: 30 }, (_, i) => addDays(start, i));
-  }, [selectedDate]);
+  }, []); // Empty deps - always relative to today, not selectedDate
 
   return (
     <div className={`flex items-stretch gap-2 px-4 pb-2 ${className}`}>
