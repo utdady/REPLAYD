@@ -38,22 +38,31 @@ function formatTime(utcIso: string): string {
 
 export function HomeFeed() {
   const currentYear = new Date().getFullYear();
-  // Default to 2024 (where your data is) instead of current year
-  const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
+  const today = startOfDay(new Date());
+  
+  // Default to today's date and current year
+  const [selectedDate, setSelectedDate] = useState(today);
   const [activeComp, setActiveComp] = useState("All");
-  const [selectedYear, setSelectedYear] = useState<number>(FEED_SEASON_YEAR); // Default to 2024
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear); // Default to current year
   const [matches, setMatches] = useState<Awaited<ReturnType<typeof getMatchesForFeed>>>([]);
   const [loading, setLoading] = useState(true);
 
   const dateYmd = format(selectedDate, "yyyy-MM-dd");
-  const isToday = selectedDate.getTime() === startOfDay(new Date()).getTime();
+  const isToday = selectedDate.getTime() === today.getTime();
 
-  // When year changes, if selectedDate is not in that year, adjust it to Jan 1 of that year
+  // When year changes, if selectedDate is not in that year, adjust it to today (if today is in that year) or Jan 1 of that year
   // This ensures the date strip shows dates from the selected year
   useEffect(() => {
     const selectedDateYear = selectedDate.getFullYear();
     if (selectedDateYear !== selectedYear) {
-      setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
+      const todayYear = today.getFullYear();
+      if (todayYear === selectedYear) {
+        // If changing to current year, use today's date
+        setSelectedDate(today);
+      } else {
+        // Otherwise, use Jan 1 of the selected year
+        setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
+      }
     }
   }, [selectedYear]); // Only depend on selectedYear, not selectedDate to avoid loops
 
@@ -66,7 +75,10 @@ export function HomeFeed() {
   }, [dateYmd, activeComp, selectedYear]);
 
   // Helper function to format season year into season label (e.g. 2024 -> "2024/25")
-  const formatSeasonLabel = (seasonYear: number): string => {
+  const formatSeasonLabel = (seasonYear: number | null | undefined): string | null => {
+    if (!seasonYear || typeof seasonYear !== 'number') {
+      return null;
+    }
     return `${seasonYear}/${String(seasonYear + 1).slice(-2)}`;
   };
 
@@ -97,7 +109,7 @@ export function HomeFeed() {
                   key={m.id}
                   id={String(m.id)}
                   competition={CODE_TO_LABEL[m.competition_code] ?? m.competition_name}
-                  season={m.season_year ? formatSeasonLabel(m.season_year) : null}
+                  season={formatSeasonLabel(m.season_year)}
                   dateLabel={formatDateLabel(m.utc_date)}
                   time={formatTime(m.utc_date)}
                   home={{
