@@ -37,9 +37,10 @@ function formatTime(utcIso: string): string {
 }
 
 export function HomeFeed() {
+  const currentYear = new Date().getFullYear();
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [activeComp, setActiveComp] = useState("All");
-  const [selectedYear, setSelectedYear] = useState<number>(FEED_SEASON_YEAR);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [matches, setMatches] = useState<Awaited<ReturnType<typeof getMatchesForFeed>>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,13 +49,16 @@ export function HomeFeed() {
 
   useEffect(() => {
     setLoading(true);
-    getMatchesForFeed(dateYmd, activeComp)
+    getMatchesForFeed(dateYmd, activeComp, selectedYear)
       .then(setMatches)
       .catch(() => setMatches([]))
       .finally(() => setLoading(false));
-  }, [dateYmd, activeComp]);
+  }, [dateYmd, activeComp, selectedYear]);
 
-  const seasonLabel = `${FEED_SEASON_YEAR}/${String(FEED_SEASON_YEAR + 1).slice(-2)}`;
+  // Derive season label from match data or use selectedYear
+  const seasonLabel = matches.length > 0 && matches[0].season_year 
+    ? `${matches[0].season_year}/${String(matches[0].season_year + 1).slice(-2)}`
+    : `${selectedYear}/${String(selectedYear + 1).slice(-2)}`;
 
   return (
     <div className="pt-20 md:pt-24">
@@ -65,7 +69,7 @@ export function HomeFeed() {
           onSelectDate={setSelectedDate}
           selectedYear={selectedYear}
           onSelectYear={setSelectedYear}
-          yearOptions={[FEED_SEASON_YEAR]}
+          yearOptions={[currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2]}
         />
         <section className="px-4 pt-6 pb-8">
           <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
@@ -75,7 +79,7 @@ export function HomeFeed() {
           {loading ? (
             <p className="text-sm text-muted">Loading…</p>
           ) : matches.length === 0 ? (
-            <p className="text-sm text-muted">No matches on this date for {seasonLabel}.</p>
+            <p className="text-sm text-muted">No matches on this date for {selectedYear}.</p>
           ) : (
             <div className="space-y-3">
               {matches.map((m) => (

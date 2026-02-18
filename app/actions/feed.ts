@@ -22,15 +22,16 @@ interface FeedMatchRow {
 }
 
 /**
- * Fetch matches from the database for a given date and optional competition filter.
- * Only returns matches from the 2024/25 season (FEED_SEASON_YEAR).
+ * Fetch matches from the database for a given date, year, and optional competition filter.
  */
 export async function getMatchesForFeed(
   dateYmd: string,
-  competitionCodeFilter: string
+  competitionCodeFilter: string,
+  year?: number
 ): Promise<FeedMatchRow[]> {
   const code = CHIP_TO_CODE[competitionCodeFilter] ?? "";
-  const seasonYear = FEED_SEASON_YEAR;
+  // Use provided year, or extract year from dateYmd, or fallback to FEED_SEASON_YEAR
+  const seasonYear = year ?? parseInt(dateYmd.split("-")[0], 10) ?? FEED_SEASON_YEAR;
 
   const sql = `
     SELECT
