@@ -62,7 +62,7 @@ export const pwaMetadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "black-translucent" as const,
     title: "REPLAYD",
   },
   viewport: {
