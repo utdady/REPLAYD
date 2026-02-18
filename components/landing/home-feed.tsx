@@ -48,16 +48,12 @@ export function HomeFeed() {
   const dateYmd = format(selectedDate, "yyyy-MM-dd");
   const isToday = selectedDate.getTime() === startOfDay(new Date()).getTime();
 
-  // When year changes, if selectedDate is not in that year, adjust it to today (if today is in that year) or Jan 1 of that year
+  // When year changes, if selectedDate is not in that year, adjust it to Jan 1 of that year
+  // This ensures the date strip shows dates from the selected year
   useEffect(() => {
     const selectedDateYear = selectedDate.getFullYear();
     if (selectedDateYear !== selectedYear) {
-      const today = new Date();
-      if (today.getFullYear() === selectedYear) {
-        setSelectedDate(startOfDay(today));
-      } else {
-        setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
-      }
+      setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
     }
   }, [selectedYear]); // Only depend on selectedYear, not selectedDate to avoid loops
 

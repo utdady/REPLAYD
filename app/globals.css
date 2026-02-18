@@ -48,6 +48,27 @@ body {
   display: none;
 }
 
+/* Visible scrollbar for date strip */
+.date-strip-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) var(--surface);
+}
+.date-strip-scroll::-webkit-scrollbar {
+  height: 6px;
+  display: block;
+}
+.date-strip-scroll::-webkit-scrollbar-track {
+  background: var(--surface);
+  border-radius: 3px;
+}
+.date-strip-scroll::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
+}
+.date-strip-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
 /* Grain texture — approved landing */
 .grain::before {
   content: "";

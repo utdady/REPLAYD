@@ -2,11 +2,26 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
 
 export async function login(formData: FormData) {
   try {
+    const cookieStore = await cookies();
+    const rememberMe = formData.get("rememberMe") === "true";
+    
+    // Store rememberMe preference in a temporary cookie before login
+    // This will be read by the server client to set appropriate cookie expiration
+    if (rememberMe) {
+      cookieStore.set("_remember_me", "true", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60, // Expires in 1 minute (just enough for login)
+      });
+    }
+
     const supabase = await createClient();
 
     const email = (formData.get("email") as string)?.trim();
@@ -19,8 +34,13 @@ export async function login(formData: FormData) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
+      // Clear rememberMe cookie on error
+      cookieStore.delete("_remember_me");
       redirect("/login?error=" + encodeURIComponent(error.message));
     }
+
+    // Clear the temporary rememberMe cookie after successful login
+    cookieStore.delete("_remember_me");
 
     revalidatePath("/", "layout");
     redirect("/");
@@ -95,7 +115,21 @@ export async function checkUsername(username: string): Promise<{ available: bool
   return { available: true };
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData?: FormData) {
+  const cookieStore = await cookies();
+  const rememberMe = formData?.get("rememberMe") === "true";
+  
+  // Store rememberMe preference in a temporary cookie before OAuth redirect
+  // This will be read by the server client to set appropriate cookie expiration
+  if (rememberMe) {
+    cookieStore.set("_remember_me", "true", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 5, // Expires in 5 minutes (enough for OAuth flow)
+    });
+  }
+
   const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
   
@@ -111,6 +145,8 @@ export async function signInWithGoogle() {
   });
 
   if (error) {
+    // Clear rememberMe cookie on error
+    cookieStore.delete("_remember_me");
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
     return;
   }
@@ -118,6 +154,7 @@ export async function signInWithGoogle() {
   if (data?.url) {
     redirect(data.url);
   } else {
+    cookieStore.delete("_remember_me");
     redirect("/login?error=Failed+to+initiate+Google+sign-in");
   }
 }

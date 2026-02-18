@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [isGooglePending, startGoogleTransition] = useTransition();
+  const [rememberMe, setRememberMe] = useState(false);
   const error = searchParams.get("error");
   const email = searchParams.get("email");
 
@@ -24,7 +25,10 @@ export default function LoginPage() {
           {decodeURIComponent(error)}
         </div>
       )}
-      <form action={(formData) => startTransition(() => login(formData))} className="space-y-4">
+      <form action={(formData) => {
+        formData.append("rememberMe", rememberMe ? "true" : "false");
+        startTransition(() => login(formData));
+      }} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
             Email
@@ -53,12 +57,27 @@ export default function LoginPage() {
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
           />
         </div>
+        <div className="flex items-center gap-2">
+          <input
+            id="rememberMe"
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-border2 bg-surface3 text-green focus:ring-1 focus:ring-green focus:ring-offset-0"
+          />
+          <label htmlFor="rememberMe" className="text-xs font-sans text-muted cursor-pointer">
+            Stay signed in
+          </label>
+        </div>
         <Button type="submit" variant="primary" className="w-full" disabled={isPending}>
           {isPending ? "Logging in..." : "Log in"}
         </Button>
       </form>
       <div className="mt-4 pt-4 border-t border-border">
-        <form action={() => startGoogleTransition(() => signInWithGoogle())}>
+        <form action={(formData) => {
+          formData.append("rememberMe", rememberMe ? "true" : "false");
+          startGoogleTransition(() => signInWithGoogle(formData));
+        }}>
           <Button
             type="submit"
             variant="outline"

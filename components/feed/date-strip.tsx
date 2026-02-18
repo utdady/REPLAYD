@@ -28,13 +28,30 @@ export function DateStrip({
   const years = yearOptions ?? [currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
   const year = selectedYear ?? currentYear;
 
-  // Generate 30 days centered around today (fixed reference, not selectedDate)
-  // This prevents the strip from jumping when clicking dates
+  // Generate dates relevant to the selected year and selectedDate
+  // If selectedDate is in the selected year, center dates around selectedDate
+  // Otherwise, center dates around Jan 1 of the selected year
   const days = useMemo(() => {
     const today = startOfDay(new Date());
-    const start = addDays(today, -15); // 15 days before today
-    return Array.from({ length: 30 }, (_, i) => addDays(start, i));
-  }, []); // Empty deps - always relative to today, not selectedDate
+    let referenceDate = selectedDate;
+    
+    // If a year is selected, check if selectedDate is in that year
+    if (onSelectYear) {
+      const selectedDateYear = selectedDate.getFullYear();
+      if (selectedDateYear !== year) {
+        // Selected date is not in the selected year, use Jan 1 of selected year
+        referenceDate = startOfDay(new Date(year, 0, 1));
+      }
+      // Otherwise, use selectedDate as reference (it's already in the correct year)
+    } else {
+      // No year selector, use selectedDate or today
+      referenceDate = selectedDate;
+    }
+    
+    // Generate 60 days (30 before, 30 after reference date) for better scrolling
+    const start = addDays(referenceDate, -30);
+    return Array.from({ length: 60 }, (_, i) => addDays(start, i));
+  }, [selectedDate, year, onSelectYear]);
 
   return (
     <div className={`flex items-stretch gap-2 px-4 pb-2 ${className}`}>
@@ -58,7 +75,7 @@ export function DateStrip({
           </select>
         </div>
       )}
-      <div className="flex gap-0 flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-0 flex-1 min-w-0 overflow-x-auto date-strip-scroll">
         {days.map((d) => {
           const active = selectedDate && selectedDate.getTime() === d.getTime();
           const isTodayDate = isToday(d);

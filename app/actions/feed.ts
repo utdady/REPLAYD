@@ -22,16 +22,15 @@ interface FeedMatchRow {
 }
 
 /**
- * Fetch matches from the database for a given date, year, and optional competition filter.
+ * Fetch matches from the database for a given date and optional competition filter.
+ * Filters by the exact date (UTC), not by season year.
  */
 export async function getMatchesForFeed(
   dateYmd: string,
   competitionCodeFilter: string,
-  year?: number
+  year?: number // Year is only used for UI context, not filtering
 ): Promise<FeedMatchRow[]> {
   const code = CHIP_TO_CODE[competitionCodeFilter] ?? "";
-  // Use provided year, or extract year from dateYmd, or fallback to FEED_SEASON_YEAR
-  const seasonYear = year ?? parseInt(dateYmd.split("-")[0], 10) ?? FEED_SEASON_YEAR;
 
   const sql = `
     SELECT
@@ -55,10 +54,9 @@ export async function getMatchesForFeed(
     JOIN teams ht ON ht.id = m.home_team_id
     JOIN teams at ON at.id = m.away_team_id
     WHERE (m.utc_date AT TIME ZONE 'UTC')::date = $1::date
-      AND s.year = $2
-      AND ($3 = '' OR c.code = $3)
+      AND ($2 = '' OR c.code = $2)
     ORDER BY m.utc_date ASC
   `;
-  const { rows } = await query<FeedMatchRow>(sql, [dateYmd, seasonYear, code]);
+  const { rows } = await query<FeedMatchRow>(sql, [dateYmd, code]);
   return rows;
 }
