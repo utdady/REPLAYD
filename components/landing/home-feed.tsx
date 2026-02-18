@@ -65,10 +65,10 @@ export function HomeFeed() {
       .finally(() => setLoading(false));
   }, [dateYmd, activeComp, selectedYear]);
 
-  // Derive season label from match data or use selectedYear
-  const seasonLabel = matches.length > 0 && matches[0].season_year 
-    ? `${matches[0].season_year}/${String(matches[0].season_year + 1).slice(-2)}`
-    : `${selectedYear}/${String(selectedYear + 1).slice(-2)}`;
+  // Helper function to format season year into season label (e.g. 2024 -> "2024/25")
+  const formatSeasonLabel = (seasonYear: number): string => {
+    return `${seasonYear}/${String(seasonYear + 1).slice(-2)}`;
+  };
 
   return (
     <div className="pt-20 md:pt-24">
@@ -97,7 +97,7 @@ export function HomeFeed() {
                   key={m.id}
                   id={String(m.id)}
                   competition={CODE_TO_LABEL[m.competition_code] ?? m.competition_name}
-                  season={seasonLabel}
+                  season={m.season_year ? formatSeasonLabel(m.season_year) : null}
                   dateLabel={formatDateLabel(m.utc_date)}
                   time={formatTime(m.utc_date)}
                   home={{
