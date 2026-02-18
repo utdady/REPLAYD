@@ -3,7 +3,7 @@
 import { query } from "@/lib/db";
 import { CHIP_TO_CODE, FEED_SEASON_YEAR } from "@/lib/feed-constants";
 
-interface FeedMatchRow {
+interface FeedMatchRow extends Record<string, unknown> {
   id: number;
   utc_date: string;
   competition_code: string;
