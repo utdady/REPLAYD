@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Routes that require authentication
-const PROTECTED_ROUTES = ["/log", "/activity", "/profile", "/users/me"];
+// Routes that require authentication via middleware redirect.
+// /profile is handled by the page itself (client component with graceful fallback).
+const PROTECTED_ROUTES = ["/log", "/activity", "/users/me"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function middleware(request: NextRequest) {
@@ -19,8 +20,6 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Skip auth logic on login/signup so we never redirect away from them
-  // unless we're sure the user is logged in (avoids redirect loops from stale cookies)
   const isAuthPage = AUTH_PAGES.includes(pathname);
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -40,9 +39,9 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // Always call getUser to refresh the session token if needed
   const { data: { user } } = await supabase.auth.getUser();
 
-  // On login/signup: always show the page, never redirect (avoids redirect loop from stale cookies)
   if (isAuthPage) {
     return response;
   }
@@ -60,7 +59,6 @@ export async function middleware(request: NextRequest) {
     return redirectRes;
   }
 
-  // Logged-in users on auth pages would redirect to / — disabled to prevent loops; they can use nav to go home
   return response;
 }
 
