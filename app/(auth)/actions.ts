@@ -233,7 +233,30 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/signup?message=Check+your+email+to+confirm+your+account");
+  redirect(`/signup?message=Check+your+email+to+confirm+your+account&email=${encodeURIComponent(email)}`);
+}
+
+export async function resendConfirmation(email: string): Promise<{ success: boolean; error?: string }> {
+  if (!email || !email.trim()) return { success: false, error: "Email is required" };
+
+  const trimmed = email.trim().substring(0, 255);
+  const supabase = await createClient();
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    "http://localhost:3001";
+
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: trimmed,
+    options: {
+      emailRedirectTo: `${siteUrl}/auth/callback`,
+    },
+  });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 export async function signout() {

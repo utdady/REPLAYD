@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { signup, checkUsername, signInWithGoogle } from "@/app/(auth)/actions";
+import { signup, checkUsername, signInWithGoogle, resendConfirmation } from "@/app/(auth)/actions";
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
@@ -14,6 +14,9 @@ export default function SignupPage() {
   const [isPending, startTransition] = useTransition();
   const [isGooglePending, startGoogleTransition] = useTransition();
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendResult, setResendResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [resendEmail, setResendEmail] = useState("");
 
   const error = searchParams.get("error");
   const message = searchParams.get("message");
@@ -106,8 +109,43 @@ export default function SignupPage() {
         </div>
       )}
       {message && (
-        <div className="mb-4 p-3 rounded-badge bg-green-dim border border-green/30 text-green text-sm font-sans">
-          {decodeURIComponent(message)}
+        <div className="mb-4 p-4 rounded-badge bg-green-dim border border-green/30 text-sm font-sans">
+          <p className="text-green mb-3">{decodeURIComponent(message)}</p>
+          <p className="text-muted text-xs mb-3">
+            Didn&apos;t receive it? Check your spam folder or resend below.
+          </p>
+          {!errorEmail && (
+            <input
+              type="email"
+              value={resendEmail}
+              onChange={(e) => setResendEmail(e.target.value)}
+              placeholder="Enter your email"
+              maxLength={255}
+              className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-xs font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green mb-2"
+            />
+          )}
+          <button
+            type="button"
+            disabled={resending || (!errorEmail && !resendEmail.trim())}
+            onClick={async () => {
+              const emailVal = errorEmail || resendEmail.trim();
+              if (!emailVal) return;
+              setResending(true);
+              setResendResult(null);
+              const result = await resendConfirmation(emailVal);
+              setResendResult(result);
+              setResending(false);
+            }}
+            className="text-xs font-semibold text-green hover:underline disabled:opacity-50"
+          >
+            {resending ? "Sending..." : "Resend confirmation email"}
+          </button>
+          {resendResult?.success && (
+            <p className="text-xs text-green mt-2">Confirmation email sent! Check your inbox.</p>
+          )}
+          {resendResult?.error && (
+            <p className="text-xs text-red mt-2">{resendResult.error}</p>
+          )}
         </div>
       )}
       <form action={(formData) => startTransition(() => signup(formData))} className="space-y-4">
