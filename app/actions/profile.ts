@@ -15,14 +15,58 @@ interface ProfileRow {
 
 export async function getMyProfile(): Promise<ProfileRow | null> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    console.error("getMyProfile auth error:", authError?.message ?? "no user");
+    return null;
+  }
 
   const { rows } = await query<ProfileRow>(
-    "SELECT id, username, display_name, bio, avatar_url FROM profiles WHERE id = $1",
+    "SELECT id::text, username, display_name, bio, avatar_url FROM profiles WHERE id = $1",
     [user.id]
   );
-  return rows[0] ?? null;
+
+  // If no profile row exists (e.g. trigger failed or old account), create one
+  if (rows.length === 0) {
+    const email = user.email ?? "";
+    const meta = user.user_metadata ?? {};
+    const baseName = (
+      meta.username ??
+      (meta.name ? String(meta.name).replace(/\s+/g, "").toLowerCase() : null) ??
+      (meta.full_name ? String(meta.full_name).replace(/\s+/g, "").toLowerCase() : null) ??
+      email.split("@")[0] ??
+      "user"
+    ).replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 30).toLowerCase();
+
+    let finalName = baseName || "user";
+    let suffix = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { rows: existing } = await query<{ count: number }>(
+        "SELECT COUNT(*)::int as count FROM profiles WHERE username = $1",
+        [finalName]
+      );
+      if (existing[0]?.count === 0) break;
+      suffix++;
+      finalName = `${baseName}_${suffix}`;
+    }
+
+    await query(
+      "INSERT INTO profiles (id, username, display_name, avatar_url) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING",
+      [user.id, finalName, meta.full_name ?? meta.name ?? null, meta.avatar_url ?? null]
+    );
+
+    return {
+      id: user.id,
+      username: finalName,
+      display_name: meta.full_name ?? meta.name ?? null,
+      bio: null,
+      avatar_url: meta.avatar_url ?? null,
+    };
+  }
+
+  return rows[0];
 }
 
 export async function updateUsername(newUsername: string): Promise<{ success: boolean; error?: string }> {

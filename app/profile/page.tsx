@@ -15,6 +15,7 @@ export default function ProfilePage() {
     avatar_url: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "same">("idle");
@@ -27,6 +28,10 @@ export default function ProfilePage() {
       .then((p) => {
         setProfile(p);
         if (p) setNewUsername(p.username);
+      })
+      .catch((err) => {
+        console.error("Profile load error:", err);
+        setLoadError(err instanceof Error ? err.message : "Failed to load profile");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -87,7 +92,9 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="pt-20 md:pt-24 min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-sm text-muted">Please log in to view your profile.</p>
+        <p className="text-sm text-muted">
+          {loadError ? `Error: ${loadError}` : "Please log in to view your profile."}
+        </p>
         <Link href="/login">
           <Button variant="primary">Log in</Button>
         </Link>
