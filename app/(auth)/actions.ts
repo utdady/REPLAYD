@@ -11,42 +11,58 @@ export async function login(formData: FormData) {
     const cookieStore = await cookies();
     const rememberMe = formData.get("rememberMe") === "true";
     
-    // Store rememberMe preference in a temporary cookie before login
-    // This will be read by the server client to set appropriate cookie expiration
     if (rememberMe) {
       cookieStore.set("_remember_me", "true", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60, // Expires in 1 minute (just enough for login)
+        maxAge: 60,
       });
     }
 
     const supabase = await createClient();
 
-    const email = (formData.get("email") as string)?.trim();
+    const identifier = (formData.get("identifier") as string)?.trim();
     const password = formData.get("password") as string;
 
-    if (!email || !password) {
-      redirect("/login?error=" + encodeURIComponent("Please fill in email and password"));
+    if (!identifier || !password) {
+      redirect("/login?error=" + encodeURIComponent("Please fill in all fields"));
+    }
+
+    // Determine if the identifier is an email or username
+    let email = identifier;
+    const isEmail = identifier.includes("@");
+
+    if (!isEmail) {
+      // Look up the user's email from profiles + auth.users via DB
+      const { rows } = await query<{ email: string }>(
+        `SELECT au.email FROM profiles p
+         JOIN auth.users au ON au.id = p.id
+         WHERE LOWER(p.username) = LOWER($1)
+         LIMIT 1`,
+        [identifier]
+      );
+      if (rows.length === 0) {
+        cookieStore.delete("_remember_me");
+        redirect("/login?error=" + encodeURIComponent("No account found with that username"));
+      }
+      email = rows[0].email;
     }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      // Clear rememberMe cookie on error
       cookieStore.delete("_remember_me");
       redirect("/login?error=" + encodeURIComponent(error.message));
     }
 
-    // Clear the temporary rememberMe cookie after successful login
     cookieStore.delete("_remember_me");
 
     revalidatePath("/", "layout");
     redirect("/");
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e && typeof (e as { digest?: string }).digest === "string") {
-      throw e; // Next.js redirect() throws a special error
+      throw e;
     }
     const message = e instanceof Error ? e.message : "Something went wrong";
     redirect("/login?error=" + encodeURIComponent(message));

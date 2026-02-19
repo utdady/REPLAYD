@@ -1,50 +1,64 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
-  // Handle OAuth errors
   if (error) {
-    const cookieStore = await cookies();
-    cookieStore.delete("_remember_me");
-    const errorMsg = errorDescription 
-      ? `${error}: ${errorDescription}` 
+    const errorMsg = errorDescription
+      ? `${error}: ${errorDescription}`
       : error;
-    return NextResponse.redirect(
+    const res = NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(errorMsg)}`
     );
+    res.cookies.delete("_remember_me");
+    return res;
   }
 
   if (!code) {
-    const cookieStore = await cookies();
-    cookieStore.delete("_remember_me");
-    return NextResponse.redirect(
+    const res = NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent("No confirmation code provided")}`
     );
+    res.cookies.delete("_remember_me");
+    return res;
   }
 
-  const supabase = await createClient();
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  // Build a response we can attach cookies to
+  let response = NextResponse.redirect(`${origin}${next}`);
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
+        response = NextResponse.redirect(`${origin}${next}`);
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        );
+      },
+    },
+  });
+
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (exchangeError) {
     console.error("Auth callback error:", exchangeError);
-    const cookieStore = await cookies();
-    cookieStore.delete("_remember_me");
-    return NextResponse.redirect(
+    response = NextResponse.redirect(
       `${origin}/login?error=${encodeURIComponent(exchangeError.message || "Could not confirm account")}`
     );
   }
 
-  // Clear the temporary rememberMe cookie after successful OAuth
-  const cookieStore = await cookies();
-  cookieStore.delete("_remember_me");
-
-  // Success - redirect to home
-  return NextResponse.redirect(`${origin}${next}`);
+  response.cookies.delete("_remember_me");
+  return response;
 }

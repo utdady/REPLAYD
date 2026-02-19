@@ -215,16 +215,18 @@ AS $$
 DECLARE
   base_username text;
   new_username text;
+  display text;
   suffix int := 0;
 BEGIN
+  -- Priority: explicit username > Google name (spaces removed) > email prefix
   base_username := COALESCE(
     NULLIF(trim(LOWER(NEW.raw_user_meta_data->>'username')), ''),
+    NULLIF(LOWER(replace(COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name', ''), ' ', '')), ''),
     LOWER(split_part(COALESCE(NEW.email, ''), '@', 1))
   );
   IF base_username IS NULL OR base_username = '' THEN
     base_username := 'user';
   END IF;
-  -- Sanitize and limit length (alphanumeric + underscore only)
   base_username := regexp_replace(substring(base_username from 1 for 30), '[^a-zA-Z0-9_]', '_', 'g');
   IF base_username = '' THEN
     base_username := 'user';
@@ -236,11 +238,17 @@ BEGIN
     new_username := base_username || '_' || suffix;
   END LOOP;
 
+  -- Display name: prefer full_name or name from OAuth
+  display := COALESCE(
+    NULLIF(trim(NEW.raw_user_meta_data->>'full_name'), ''),
+    NULLIF(trim(NEW.raw_user_meta_data->>'name'), '')
+  );
+
   INSERT INTO profiles (id, username, display_name, avatar_url)
   VALUES (
     NEW.id,
     new_username,
-    NEW.raw_user_meta_data->>'full_name',
+    display,
     NEW.raw_user_meta_data->>'avatar_url'
   );
   RETURN NEW;

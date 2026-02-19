@@ -30,17 +30,17 @@ export default function LoginPage() {
         startTransition(() => login(formData));
       }} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
-            Email
+          <label htmlFor="identifier" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
+            Email or Username
           </label>
           <input
-            id="email"
-            type="email"
-            name="email"
-            autoComplete="email"
+            id="identifier"
+            type="text"
+            name="identifier"
+            autoComplete="username"
             required
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
-            placeholder="you@example.com"
+            placeholder="you@example.com or johndoe"
             defaultValue={email || ""}
           />
         </div>

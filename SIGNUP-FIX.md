@@ -18,10 +18,13 @@ AS $$
 DECLARE
   base_username text;
   new_username text;
+  display text;
   suffix int := 0;
 BEGIN
+  -- Priority: explicit username > Google name (spaces removed) > email prefix
   base_username := COALESCE(
     NULLIF(trim(LOWER(NEW.raw_user_meta_data->>'username')), ''),
+    NULLIF(LOWER(replace(COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name', ''), ' ', '')), ''),
     LOWER(split_part(COALESCE(NEW.email, ''), '@', 1))
   );
   IF base_username IS NULL OR base_username = '' THEN
@@ -38,11 +41,16 @@ BEGIN
     new_username := base_username || '_' || suffix;
   END LOOP;
 
+  display := COALESCE(
+    NULLIF(trim(NEW.raw_user_meta_data->>'full_name'), ''),
+    NULLIF(trim(NEW.raw_user_meta_data->>'name'), '')
+  );
+
   INSERT INTO profiles (id, username, display_name, avatar_url)
   VALUES (
     NEW.id,
     new_username,
-    NEW.raw_user_meta_data->>'full_name',
+    display,
     NEW.raw_user_meta_data->>'avatar_url'
   );
   RETURN NEW;
