@@ -10,6 +10,7 @@ interface UserSearchResult {
   display_name: string | null;
   avatar_url: string | null;
   is_following: boolean;
+  [key: string]: unknown;
 }
 
 export async function searchUsers(searchQuery: string): Promise<UserSearchResult[]> {
