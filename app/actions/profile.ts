@@ -10,6 +10,14 @@ interface ProfileRow {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  created_at: string | null;
+  [key: string]: unknown;
+}
+
+interface ProfileStats {
+  matches_logged: number;
+  avg_rating: number | null;
+  lists_count: number;
   [key: string]: unknown;
 }
 
@@ -23,7 +31,7 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
   }
 
   const { rows } = await query<ProfileRow>(
-    "SELECT id::text, username, display_name, bio, avatar_url FROM profiles WHERE id = $1",
+    "SELECT id::text, username, display_name, bio, avatar_url, created_at::text FROM profiles WHERE id = $1",
     [user.id]
   );
 
@@ -63,6 +71,7 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
       display_name: meta.full_name ?? meta.name ?? null,
       bio: null,
       avatar_url: meta.avatar_url ?? null,
+      created_at: new Date().toISOString(),
     };
   }
 
@@ -101,5 +110,38 @@ export async function updateUsername(newUsername: string): Promise<{ success: bo
 
   revalidatePath("/profile");
   revalidatePath(`/users/${trimmed}`);
+  return { success: true };
+}
+
+export async function getProfileStats(): Promise<ProfileStats> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { matches_logged: 0, avg_rating: null, lists_count: 0 };
+
+  const { rows: logStats } = await query<{ count: number; avg: number | null }>(
+    "SELECT COUNT(*)::int as count, ROUND(AVG(rating)::numeric, 1)::float as avg FROM match_logs WHERE user_id = $1",
+    [user.id]
+  );
+  const { rows: listStats } = await query<{ count: number }>(
+    "SELECT COUNT(*)::int as count FROM lists WHERE user_id = $1",
+    [user.id]
+  );
+
+  return {
+    matches_logged: logStats[0]?.count ?? 0,
+    avg_rating: logStats[0]?.avg ?? null,
+    lists_count: listStats[0]?.count ?? 0,
+  };
+}
+
+export async function updateBio(newBio: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  const trimmed = newBio.trim().substring(0, 300);
+  await query("UPDATE profiles SET bio = $1 WHERE id = $2", [trimmed || null, user.id]);
+
+  revalidatePath("/profile");
   return { success: true };
 }
