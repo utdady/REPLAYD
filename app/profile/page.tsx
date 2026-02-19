@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getMyProfile, getProfileStats } from "@/app/actions/profile";
+import { getFollowCounts } from "@/app/actions/social";
 
 type Profile = {
   id: string;
@@ -43,15 +44,22 @@ function formatJoinDate(dateStr: string | null): string {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<Stats>({ matches_logged: 0, avg_rating: null, lists_count: 0 });
+  const [followers, setFollowers] = useState(0);
+  const [following, setFollowing] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"matches" | "reviews" | "lists">("matches");
 
   useEffect(() => {
     Promise.all([getMyProfile(), getProfileStats()])
-      .then(([p, s]) => {
+      .then(async ([p, s]) => {
         setProfile(p as Profile | null);
         setStats(s);
+        if (p) {
+          const counts = await getFollowCounts(p.id);
+          setFollowers(counts.followers);
+          setFollowing(counts.following);
+        }
       })
       .catch((err) => {
         console.error("Profile load error:", err);
@@ -131,7 +139,7 @@ export default function ProfilePage() {
             @{profile.username}
           </p>
 
-          <div className="flex justify-center gap-10 mb-6">
+          <div className="flex justify-center gap-7 sm:gap-10 mb-6">
             <div className="flex flex-col items-center gap-1">
               <span className="font-display text-[1.8rem] tracking-[.05em] leading-none text-white">
                 {stats.matches_logged}
@@ -150,10 +158,18 @@ export default function ProfilePage() {
             </div>
             <div className="flex flex-col items-center gap-1">
               <span className="font-display text-[1.8rem] tracking-[.05em] leading-none text-white">
-                {stats.lists_count}
+                {followers}
               </span>
               <span className="font-mono text-[.62rem] tracking-[.1em] uppercase text-muted">
-                Lists
+                Followers
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-1">
+              <span className="font-display text-[1.8rem] tracking-[.05em] leading-none text-white">
+                {following}
+              </span>
+              <span className="font-mono text-[.62rem] tracking-[.1em] uppercase text-muted">
+                Following
               </span>
             </div>
           </div>
