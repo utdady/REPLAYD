@@ -11,6 +11,7 @@ type Profile = {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
   created_at: string | null;
   instagram: string | null;
   twitter: string | null;
@@ -93,9 +94,13 @@ export default function ProfilePage() {
         {/* ── HEADER ───────────────────────────────────────── */}
         <div className="relative text-center pt-8 pb-6">
           <div
-            className="absolute -top-16 -left-4 -right-4 sm:-left-6 sm:-right-6 h-[180px] border-b border-border z-0"
-            style={{ background: "linear-gradient(135deg, rgba(61,220,132,0.08) 0%, rgba(61,220,132,0.03) 100%)" }}
-          />
+            className="absolute -top-16 -left-4 -right-4 sm:-left-6 sm:-right-6 h-[180px] border-b border-border z-0 overflow-hidden"
+            style={!profile.cover_url ? { background: "linear-gradient(135deg, rgba(61,220,132,0.08) 0%, rgba(61,220,132,0.03) 100%)" } : undefined}
+          >
+            {profile.cover_url && (
+              <img src={profile.cover_url} alt="" className="w-full h-full object-cover" />
+            )}
+          </div>
 
           <div className="relative z-[1] inline-block mb-5">
             {profile.avatar_url ? (

@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   display_name    TEXT,
   bio             TEXT,
   avatar_url      TEXT,
+  cover_url       TEXT,
   favourite_team_id INTEGER   REFERENCES teams(id),
   is_private      BOOLEAN     DEFAULT FALSE,
   instagram       TEXT,

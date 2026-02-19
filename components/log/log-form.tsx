@@ -60,6 +60,7 @@ export function LogForm({
           onChange={(e) => setReview(e.target.value)}
           placeholder="What did you think?"
           rows={4}
+          maxLength={5000}
           className="w-full rounded-badge border border-border2 bg-surface px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
         />
       </div>

@@ -39,6 +39,7 @@ export default function LoginPage() {
             name="identifier"
             autoComplete="username"
             required
+            maxLength={255}
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
             placeholder="you@example.com or johndoe"
             defaultValue={email || ""}
@@ -54,6 +55,7 @@ export default function LoginPage() {
             name="password"
             autoComplete="current-password"
             required
+            maxLength={128}
             className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
           />
         </div>

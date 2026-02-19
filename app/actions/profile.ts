@@ -10,6 +10,7 @@ interface ProfileRow {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
   created_at: string | null;
   instagram: string | null;
   twitter: string | null;
@@ -35,7 +36,7 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
   }
 
   const { rows } = await query<ProfileRow>(
-    "SELECT id::text, username, display_name, bio, avatar_url, created_at::text, instagram, twitter, tiktok, youtube FROM profiles WHERE id = $1",
+    "SELECT id::text, username, display_name, bio, avatar_url, cover_url, created_at::text, instagram, twitter, tiktok, youtube FROM profiles WHERE id = $1",
     [user.id]
   );
 
@@ -75,6 +76,7 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
       display_name: meta.full_name ?? meta.name ?? null,
       bio: null,
       avatar_url: meta.avatar_url ?? null,
+      cover_url: null,
       created_at: new Date().toISOString(),
       instagram: null,
       twitter: null,
@@ -181,6 +183,121 @@ export async function updateProfile(data: ProfileUpdateData): Promise<{ success:
      WHERE id = $7`,
     [displayName, bio, instagram, twitter, tiktok, youtube, user.id]
   );
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/edit");
+  return { success: true };
+}
+
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;  // 2 MB
+const MAX_COVER_BYTES = 4 * 1024 * 1024;   // 4 MB
+
+function validateImageFile(
+  file: File,
+  maxBytes: number,
+  label: string
+): string | null {
+  if (!file || file.size === 0) return `No ${label} file provided`;
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return `${label} must be JPEG, PNG, or WebP`;
+  }
+  if (file.size > maxBytes) {
+    return `${label} must be under ${Math.round(maxBytes / 1024 / 1024)} MB (yours is ${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+  }
+  return null;
+}
+
+export async function uploadAvatar(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  const file = formData.get("file") as File | null;
+  if (!file) return { success: false, error: "No file provided" };
+
+  const validationError = validateImageFile(file, MAX_AVATAR_BYTES, "Avatar");
+  if (validationError) return { success: false, error: validationError };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `avatars/${user.id}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("profile-images")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) return { success: false, error: uploadError.message };
+
+  const { data: urlData } = supabase.storage
+    .from("profile-images")
+    .getPublicUrl(path);
+
+  const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+
+  await query("UPDATE profiles SET avatar_url = $1, updated_at = NOW() WHERE id = $2", [publicUrl, user.id]);
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/edit");
+  return { success: true, url: publicUrl };
+}
+
+export async function uploadCover(formData: FormData): Promise<{ success: boolean; url?: string; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  const file = formData.get("file") as File | null;
+  if (!file) return { success: false, error: "No file provided" };
+
+  const validationError = validateImageFile(file, MAX_COVER_BYTES, "Cover photo");
+  if (validationError) return { success: false, error: validationError };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `covers/${user.id}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("profile-images")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) return { success: false, error: uploadError.message };
+
+  const { data: urlData } = supabase.storage
+    .from("profile-images")
+    .getPublicUrl(path);
+
+  const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+
+  await query("UPDATE profiles SET cover_url = $1, updated_at = NOW() WHERE id = $2", [publicUrl, user.id]);
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/edit");
+  return { success: true, url: publicUrl };
+}
+
+export async function removeAvatar(): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  await supabase.storage.from("profile-images").remove([
+    `avatars/${user.id}.jpg`, `avatars/${user.id}.png`, `avatars/${user.id}.webp`,
+  ]);
+  await query("UPDATE profiles SET avatar_url = NULL, updated_at = NOW() WHERE id = $1", [user.id]);
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/edit");
+  return { success: true };
+}
+
+export async function removeCover(): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  await supabase.storage.from("profile-images").remove([
+    `covers/${user.id}.jpg`, `covers/${user.id}.png`, `covers/${user.id}.webp`,
+  ]);
+  await query("UPDATE profiles SET cover_url = NULL, updated_at = NOW() WHERE id = $1", [user.id]);
 
   revalidatePath("/profile");
   revalidatePath("/profile/edit");

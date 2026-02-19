@@ -22,8 +22,8 @@ export async function login(formData: FormData) {
 
     const supabase = await createClient();
 
-    const identifier = (formData.get("identifier") as string)?.trim();
-    const password = formData.get("password") as string;
+    const identifier = (formData.get("identifier") as string)?.trim().substring(0, 255);
+    const password = (formData.get("password") as string)?.substring(0, 128);
 
     if (!identifier || !password) {
       redirect("/login?error=" + encodeURIComponent("Please fill in all fields"));
@@ -182,9 +182,9 @@ export async function signInWithGoogle(formData?: FormData) {
 export async function signup(formData: FormData) {
   const supabase = await createClient();
 
-  const email = (formData.get("email") as string)?.trim();
-  const password = formData.get("password") as string;
-  const username = (formData.get("username") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim().substring(0, 255);
+  const password = (formData.get("password") as string)?.substring(0, 128);
+  const username = (formData.get("username") as string)?.trim().substring(0, 30);
 
   if (!email || !password || !username) {
     redirect("/signup?error=Please+fill+in+all+fields");

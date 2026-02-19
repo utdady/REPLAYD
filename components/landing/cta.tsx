@@ -37,6 +37,7 @@ export function Cta() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
+          maxLength={255}
           className="flex-1 bg-transparent border-0 outline-none py-3.5 px-4 font-sans text-sm text-white placeholder:text-muted2"
         />
         <button
