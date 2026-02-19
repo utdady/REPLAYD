@@ -30,34 +30,38 @@ export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-  // Build a response we can attach cookies to
-  let response = NextResponse.redirect(`${origin}${next}`);
+  // Collect all cookies that Supabase wants to set during the exchange
+  const cookiesToReturn: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
-        cookiesToSet.forEach(({ name, value }) =>
-          request.cookies.set(name, value)
-        );
-        response = NextResponse.redirect(`${origin}${next}`);
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
+      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        cookiesToSet.forEach(({ name, value, options = {} }) => {
+          request.cookies.set(name, value);
+          cookiesToReturn.push({ name, value, options });
+        });
       },
     },
   });
 
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
+  // Build the final redirect response
+  let redirectUrl = `${origin}${next}`;
   if (exchangeError) {
     console.error("Auth callback error:", exchangeError);
-    response = NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(exchangeError.message || "Could not confirm account")}`
-    );
+    redirectUrl = `${origin}/login?error=${encodeURIComponent(exchangeError.message || "Could not confirm account")}`;
   }
+
+  const response = NextResponse.redirect(redirectUrl);
+
+  // Apply all collected auth cookies to the response
+  cookiesToReturn.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options);
+  });
 
   response.cookies.delete("_remember_me");
   return response;

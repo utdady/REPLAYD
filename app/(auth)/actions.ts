@@ -147,7 +147,11 @@ export async function signInWithGoogle(formData?: FormData) {
   }
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
+  // Use NEXT_PUBLIC_SITE_URL, falling back to Vercel's auto-set URL, then localhost
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    "http://localhost:3001";
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -205,8 +209,10 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=Username+is+already+taken${suggestionsParam}&username=${encodeURIComponent(username)}`);
   }
 
-  // Use environment variable or default to localhost:3001 for dev
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    "http://localhost:3001";
   
   const { error } = await supabase.auth.signUp({
     email,
