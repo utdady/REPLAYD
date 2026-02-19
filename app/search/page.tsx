@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { searchUsers, followUser, unfollowUser } from "@/app/actions/social";
 
 type UserResult = {
@@ -125,33 +126,31 @@ export default function SearchPage() {
                 key={user.id}
                 className="flex items-center gap-3 bg-surface border border-border rounded-card px-4 py-3"
               >
-                {/* Avatar */}
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.display_name ?? user.username}
-                    className="w-11 h-11 rounded-full object-cover shrink-0"
-                  />
-                ) : (
-                  <div
-                    className="w-11 h-11 rounded-full shrink-0 flex items-center justify-center text-green font-medium text-sm"
-                    style={{ background: "linear-gradient(135deg, var(--surface3), var(--surface2))" }}
-                  >
-                    {getInitials(user.display_name, user.username)}
+                <Link href={`/users/${user.username}`} className="flex items-center gap-3 flex-1 min-w-0">
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.display_name ?? user.username}
+                      className="w-11 h-11 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className="w-11 h-11 rounded-full shrink-0 flex items-center justify-center text-green font-medium text-sm"
+                      style={{ background: "linear-gradient(135deg, var(--surface3), var(--surface2))" }}
+                    >
+                      {getInitials(user.display_name, user.username)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[.88rem] font-medium text-white truncate">
+                      {user.display_name || user.username}
+                    </p>
+                    <p className="text-[.75rem] font-mono text-muted truncate">
+                      @{user.username}
+                    </p>
                   </div>
-                )}
+                </Link>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[.88rem] font-medium text-white truncate">
-                    {user.display_name || user.username}
-                  </p>
-                  <p className="text-[.75rem] font-mono text-muted truncate">
-                    @{user.username}
-                  </p>
-                </div>
-
-                {/* Follow/Unfollow button */}
                 {user.is_following ? (
                   <button
                     onClick={() => handleUnfollow(user.id)}

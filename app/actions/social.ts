@@ -99,6 +99,54 @@ export async function unfollowUser(targetId: string): Promise<{ success: boolean
   return { success: true };
 }
 
+interface FollowListUser {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  [key: string]: unknown;
+}
+
+export async function getFollowersList(userId: string): Promise<FollowListUser[]> {
+  const { rows } = await query<FollowListUser>(
+    `SELECT p.id::text, p.username, p.display_name, p.avatar_url
+     FROM follows f
+     JOIN profiles p ON p.id = f.follower_id
+     WHERE f.following_id = $1
+     ORDER BY f.created_at DESC
+     LIMIT 200`,
+    [userId]
+  );
+  return rows;
+}
+
+export async function getFollowingList(userId: string): Promise<FollowListUser[]> {
+  const { rows } = await query<FollowListUser>(
+    `SELECT p.id::text, p.username, p.display_name, p.avatar_url
+     FROM follows f
+     JOIN profiles p ON p.id = f.following_id
+     WHERE f.follower_id = $1
+     ORDER BY f.created_at DESC
+     LIMIT 200`,
+    [userId]
+  );
+  return rows;
+}
+
+export async function getUserProfile(username: string) {
+  const { rows } = await query<{
+    id: string; username: string; display_name: string | null;
+    bio: string | null; avatar_url: string | null; cover_url: string | null;
+    created_at: string | null; instagram: string | null; twitter: string | null;
+    tiktok: string | null; youtube: string | null;
+    [key: string]: unknown;
+  }>(
+    "SELECT id::text, username, display_name, bio, avatar_url, cover_url, created_at::text, instagram, twitter, tiktok, youtube FROM profiles WHERE LOWER(username) = LOWER($1)",
+    [username.trim().substring(0, 30)]
+  );
+  return rows[0] ?? null;
+}
+
 export async function getFollowCounts(userId: string): Promise<{ followers: number; following: number }> {
   const { rows: followerRows } = await query<{ count: number }>(
     "SELECT COUNT(*)::int AS count FROM follows WHERE following_id = $1",

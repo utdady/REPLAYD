@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getMyProfile, getProfileStats } from "@/app/actions/profile";
-import { getFollowCounts } from "@/app/actions/social";
+import { getFollowCounts, getFollowersList, getFollowingList } from "@/app/actions/social";
 
 type Profile = {
   id: string;
@@ -24,6 +24,13 @@ type Stats = {
   matches_logged: number;
   avg_rating: number | null;
   lists_count: number;
+};
+
+type FollowUser = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
 };
 
 function getInitials(displayName: string | null, username: string): string {
@@ -50,6 +57,11 @@ export default function ProfilePage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"matches" | "reviews" | "lists">("matches");
 
+  // Follow list modal
+  const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
+  const [listUsers, setListUsers] = useState<FollowUser[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+
   useEffect(() => {
     Promise.all([getMyProfile(), getProfileStats()])
       .then(async ([p, s]) => {
@@ -67,6 +79,17 @@ export default function ProfilePage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const openFollowList = async (type: "followers" | "following") => {
+    if (!profile) return;
+    setListModal(type);
+    setListLoading(true);
+    const users = type === "followers"
+      ? await getFollowersList(profile.id)
+      : await getFollowingList(profile.id);
+    setListUsers(users as FollowUser[]);
+    setListLoading(false);
+  };
 
   if (loading) {
     return (
@@ -98,6 +121,75 @@ export default function ProfilePage() {
   return (
     <div className="pt-16 md:pt-20 min-h-screen main-content">
       <div className="max-w-[600px] mx-auto px-4 sm:px-6 pb-12">
+
+        {/* ── FOLLOW LIST MODAL ──────────────────────────── */}
+        {listModal && (
+          <>
+            <div
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
+              onClick={() => setListModal(null)}
+            />
+            <div className="fixed inset-x-4 top-[15vh] sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[400px] z-[70] bg-surface border border-border rounded-xl max-h-[60vh] flex flex-col overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+                <h3 className="text-[1rem] font-semibold text-white capitalize">{listModal}</h3>
+                <button
+                  onClick={() => setListModal(null)}
+                  className="w-8 h-8 rounded-full bg-surface3 flex items-center justify-center text-muted hover:text-white transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* List */}
+              <div className="flex-1 overflow-y-auto p-3">
+                {listLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-green border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : listUsers.length === 0 ? (
+                  <p className="text-center text-muted text-sm py-8">
+                    {listModal === "followers" ? "No followers yet" : "Not following anyone yet"}
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {listUsers.map((u) => (
+                      <Link
+                        key={u.id}
+                        href={`/users/${u.username}`}
+                        onClick={() => setListModal(null)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-card hover:bg-surface2 transition-colors"
+                      >
+                        {u.avatar_url ? (
+                          <img
+                            src={u.avatar_url}
+                            alt={u.display_name ?? u.username}
+                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-green font-medium text-xs"
+                            style={{ background: "linear-gradient(135deg, var(--surface3), var(--surface2))" }}
+                          >
+                            {getInitials(u.display_name, u.username)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[.85rem] font-medium text-white truncate">
+                            {u.display_name || u.username}
+                          </p>
+                          <p className="text-[.72rem] font-mono text-muted truncate">
+                            @{u.username}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ── HEADER ───────────────────────────────────────── */}
         <div className="relative text-center pt-8 pb-6">
@@ -156,22 +248,22 @@ export default function ProfilePage() {
                 Avg Rating
               </span>
             </div>
-            <div className="flex flex-col items-center gap-1">
+            <button onClick={() => openFollowList("followers")} className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity">
               <span className="font-display text-[1.8rem] tracking-[.05em] leading-none text-white">
                 {followers}
               </span>
               <span className="font-mono text-[.62rem] tracking-[.1em] uppercase text-muted">
                 Followers
               </span>
-            </div>
-            <div className="flex flex-col items-center gap-1">
+            </button>
+            <button onClick={() => openFollowList("following")} className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity">
               <span className="font-display text-[1.8rem] tracking-[.05em] leading-none text-white">
                 {following}
               </span>
               <span className="font-mono text-[.62rem] tracking-[.1em] uppercase text-muted">
                 Following
               </span>
-            </div>
+            </button>
           </div>
 
           <div className="flex gap-3 justify-center">
@@ -198,13 +290,9 @@ export default function ProfilePage() {
 
           <div className="bg-surface border border-border rounded-card p-6">
             {profile.bio ? (
-              <p className="text-[.88rem] leading-relaxed text-white mb-4">
-                {profile.bio}
-              </p>
+              <p className="text-[.88rem] leading-relaxed text-white mb-4">{profile.bio}</p>
             ) : (
-              <p className="text-[.85rem] text-muted italic mb-4">
-                No bio yet
-              </p>
+              <p className="text-[.85rem] text-muted italic mb-4">No bio yet</p>
             )}
 
             <div className="flex flex-col gap-[.65rem]">
@@ -212,60 +300,28 @@ export default function ProfilePage() {
                 <span className="w-5 text-center text-base">📅</span>
                 <span>Joined {formatJoinDate(profile.created_at)}</span>
               </div>
-
               {profile.twitter && (
                 <div className="flex items-center gap-3 text-[.78rem] text-muted">
                   <span className="w-5 text-center text-base font-semibold" style={{ fontFamily: "serif" }}>𝕏</span>
-                  <a
-                    href={`https://x.com/${profile.twitter}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green hover:opacity-80 transition-opacity"
-                  >
-                    @{profile.twitter}
-                  </a>
+                  <a href={`https://x.com/${profile.twitter}`} target="_blank" rel="noopener noreferrer" className="text-green hover:opacity-80 transition-opacity">@{profile.twitter}</a>
                 </div>
               )}
-
               {profile.instagram && (
                 <div className="flex items-center gap-3 text-[.78rem] text-muted">
                   <span className="w-5 text-center text-base">📷</span>
-                  <a
-                    href={`https://instagram.com/${profile.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green hover:opacity-80 transition-opacity"
-                  >
-                    @{profile.instagram}
-                  </a>
+                  <a href={`https://instagram.com/${profile.instagram}`} target="_blank" rel="noopener noreferrer" className="text-green hover:opacity-80 transition-opacity">@{profile.instagram}</a>
                 </div>
               )}
-
               {profile.tiktok && (
                 <div className="flex items-center gap-3 text-[.78rem] text-muted">
                   <span className="w-5 text-center text-base">🎵</span>
-                  <a
-                    href={`https://tiktok.com/@${profile.tiktok}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green hover:opacity-80 transition-opacity"
-                  >
-                    @{profile.tiktok}
-                  </a>
+                  <a href={`https://tiktok.com/@${profile.tiktok}`} target="_blank" rel="noopener noreferrer" className="text-green hover:opacity-80 transition-opacity">@{profile.tiktok}</a>
                 </div>
               )}
-
               {profile.youtube && (
                 <div className="flex items-center gap-3 text-[.78rem] text-muted">
                   <span className="w-5 text-center text-base">▶️</span>
-                  <a
-                    href={`https://youtube.com/${profile.youtube}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-green hover:opacity-80 transition-opacity"
-                  >
-                    {profile.youtube}
-                  </a>
+                  <a href={`https://youtube.com/${profile.youtube}`} target="_blank" rel="noopener noreferrer" className="text-green hover:opacity-80 transition-opacity">{profile.youtube}</a>
                 </div>
               )}
             </div>
@@ -276,21 +332,13 @@ export default function ProfilePage() {
         <section className="mt-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted">Rushmore</h2>
-            <span className="text-[.78rem] text-green cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1">
-              Edit ›
-            </span>
+            <span className="text-[.78rem] text-green cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1">Edit ›</span>
           </div>
-
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             {[1, 2, 3, 4].map((slot) => (
-              <div
-                key={slot}
-                className="min-w-[140px] shrink-0 aspect-square bg-surface2 border border-dashed border-border2 rounded-card flex flex-col items-center justify-center gap-2"
-              >
+              <div key={slot} className="min-w-[140px] shrink-0 aspect-square bg-surface2 border border-dashed border-border2 rounded-card flex flex-col items-center justify-center gap-2">
                 <span className="text-2xl opacity-30">+</span>
-                <span className="font-mono text-[.62rem] tracking-[.08em] uppercase text-muted2">
-                  Add match
-                </span>
+                <span className="font-mono text-[.62rem] tracking-[.08em] uppercase text-muted2">Add match</span>
               </div>
             ))}
           </div>
@@ -303,12 +351,8 @@ export default function ProfilePage() {
           </div>
           <div className="bg-surface border border-dashed border-border2 rounded-card py-10 px-6 text-center">
             <div className="text-2xl mb-3 opacity-30">📊</div>
-            <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">
-              Coming Soon
-            </div>
-            <p className="text-[.78rem] text-muted leading-relaxed">
-              Match frequency, rating distribution, favorite teams, and more.
-            </p>
+            <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">Coming Soon</div>
+            <p className="text-[.78rem] text-muted leading-relaxed">Match frequency, rating distribution, favorite teams, and more.</p>
           </div>
         </section>
 
@@ -319,12 +363,8 @@ export default function ProfilePage() {
           </div>
           <div className="bg-surface border border-dashed border-border2 rounded-card py-10 px-6 text-center">
             <div className="text-2xl mb-3 opacity-30">⭐</div>
-            <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">
-              Coming Soon
-            </div>
-            <p className="text-[.78rem] text-muted leading-relaxed">
-              Showcase your favorite players, teams, and clubs across all competitions.
-            </p>
+            <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">Coming Soon</div>
+            <p className="text-[.78rem] text-muted leading-relaxed">Showcase your favorite players, teams, and clubs across all competitions.</p>
           </div>
         </section>
 
@@ -334,14 +374,10 @@ export default function ProfilePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative text-[.78rem] font-medium px-5 py-3 capitalize transition-colors ${
-                activeTab === tab ? "text-white" : "text-muted2 hover:text-muted"
-              }`}
+              className={`relative text-[.78rem] font-medium px-5 py-3 capitalize transition-colors ${activeTab === tab ? "text-white" : "text-muted2 hover:text-muted"}`}
             >
               {tab}
-              {activeTab === tab && (
-                <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-green" />
-              )}
+              {activeTab === tab && <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-green" />}
             </button>
           ))}
         </div>
