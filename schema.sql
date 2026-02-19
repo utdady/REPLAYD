@@ -88,6 +88,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   avatar_url      TEXT,
   favourite_team_id INTEGER   REFERENCES teams(id),
   is_private      BOOLEAN     DEFAULT FALSE,
+  instagram       TEXT,
+  twitter         TEXT,
+  tiktok          TEXT,
+  youtube         TEXT,
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );

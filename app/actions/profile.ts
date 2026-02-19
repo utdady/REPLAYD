@@ -11,6 +11,10 @@ interface ProfileRow {
   bio: string | null;
   avatar_url: string | null;
   created_at: string | null;
+  instagram: string | null;
+  twitter: string | null;
+  tiktok: string | null;
+  youtube: string | null;
   [key: string]: unknown;
 }
 
@@ -31,7 +35,7 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
   }
 
   const { rows } = await query<ProfileRow>(
-    "SELECT id::text, username, display_name, bio, avatar_url, created_at::text FROM profiles WHERE id = $1",
+    "SELECT id::text, username, display_name, bio, avatar_url, created_at::text, instagram, twitter, tiktok, youtube FROM profiles WHERE id = $1",
     [user.id]
   );
 
@@ -72,6 +76,10 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
       bio: null,
       avatar_url: meta.avatar_url ?? null,
       created_at: new Date().toISOString(),
+      instagram: null,
+      twitter: null,
+      tiktok: null,
+      youtube: null,
     };
   }
 
@@ -143,5 +151,38 @@ export async function updateBio(newBio: string): Promise<{ success: boolean; err
   await query("UPDATE profiles SET bio = $1 WHERE id = $2", [trimmed || null, user.id]);
 
   revalidatePath("/profile");
+  return { success: true };
+}
+
+interface ProfileUpdateData {
+  display_name?: string;
+  bio?: string;
+  instagram?: string;
+  twitter?: string;
+  tiktok?: string;
+  youtube?: string;
+}
+
+export async function updateProfile(data: ProfileUpdateData): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Not logged in" };
+
+  const displayName = (data.display_name ?? "").trim().substring(0, 100) || null;
+  const bio = (data.bio ?? "").trim().substring(0, 300) || null;
+  const instagram = (data.instagram ?? "").trim().replace(/^@/, "").substring(0, 60) || null;
+  const twitter = (data.twitter ?? "").trim().replace(/^@/, "").substring(0, 60) || null;
+  const tiktok = (data.tiktok ?? "").trim().replace(/^@/, "").substring(0, 60) || null;
+  const youtube = (data.youtube ?? "").trim().substring(0, 100) || null;
+
+  await query(
+    `UPDATE profiles
+     SET display_name = $1, bio = $2, instagram = $3, twitter = $4, tiktok = $5, youtube = $6, updated_at = NOW()
+     WHERE id = $7`,
+    [displayName, bio, instagram, twitter, tiktok, youtube, user.id]
+  );
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/edit");
   return { success: true };
 }

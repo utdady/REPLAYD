@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useTransition, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getMyProfile, updateUsername, getProfileStats, updateBio } from "@/app/actions/profile";
-import { checkUsername } from "@/app/(auth)/actions";
+import { getMyProfile, getProfileStats } from "@/app/actions/profile";
 
 type Profile = {
   id: string;
@@ -13,6 +12,10 @@ type Profile = {
   bio: string | null;
   avatar_url: string | null;
   created_at: string | null;
+  instagram: string | null;
+  twitter: string | null;
+  tiktok: string | null;
+  youtube: string | null;
 };
 
 type Stats = {
@@ -41,32 +44,13 @@ export default function ProfilePage() {
   const [stats, setStats] = useState<Stats>({ matches_logged: 0, avg_rating: null, lists_count: 0 });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-
-  // Username editing
-  const [editingUsername, setEditingUsername] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
-  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "same">("idle");
-  const [saveResult, setSaveResult] = useState<{ success?: boolean; error?: string } | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Bio editing
-  const [editingBio, setEditingBio] = useState(false);
-  const [bioText, setBioText] = useState("");
-  const [bioSaving, setBioSaving] = useState(false);
-
-  // Active tab
   const [activeTab, setActiveTab] = useState<"matches" | "reviews" | "lists">("matches");
 
   useEffect(() => {
     Promise.all([getMyProfile(), getProfileStats()])
       .then(([p, s]) => {
-        setProfile(p);
+        setProfile(p as Profile | null);
         setStats(s);
-        if (p) {
-          setNewUsername(p.username);
-          setBioText(p.bio ?? "");
-        }
       })
       .catch((err) => {
         console.error("Profile load error:", err);
@@ -74,61 +58,6 @@ export default function ProfilePage() {
       })
       .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
-  const handleUsernameInput = (value: string) => {
-    setNewUsername(value);
-    setSaveResult(null);
-    const trimmed = value.trim();
-
-    if (!trimmed || trimmed === profile?.username) {
-      setUsernameStatus(trimmed === profile?.username ? "same" : "idle");
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_]{3,30}$/.test(trimmed)) {
-      setUsernameStatus("invalid");
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      return;
-    }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      setUsernameStatus("checking");
-      const result = await checkUsername(trimmed);
-      setUsernameStatus(result.available ? "available" : "taken");
-    }, 400);
-  };
-
-  const handleUsernameSave = () => {
-    const trimmed = newUsername.trim();
-    if (!trimmed || trimmed === profile?.username) return;
-    startTransition(async () => {
-      const result = await updateUsername(trimmed);
-      setSaveResult(result);
-      if (result.success && profile) {
-        setProfile({ ...profile, username: trimmed.toLowerCase() });
-        setEditingUsername(false);
-        setUsernameStatus("same");
-      }
-    });
-  };
-
-  const handleBioSave = async () => {
-    setBioSaving(true);
-    const result = await updateBio(bioText);
-    if (result.success && profile) {
-      setProfile({ ...profile, bio: bioText.trim() || null });
-      setEditingBio(false);
-    }
-    setBioSaving(false);
-  };
 
   if (loading) {
     return (
@@ -155,6 +84,7 @@ export default function ProfilePage() {
   }
 
   const initials = getInitials(profile.display_name, profile.username);
+  const hasSocials = profile.instagram || profile.twitter || profile.tiktok || profile.youtube;
 
   return (
     <div className="pt-16 md:pt-20 min-h-screen main-content">
@@ -162,13 +92,11 @@ export default function ProfilePage() {
 
         {/* ── HEADER ───────────────────────────────────────── */}
         <div className="relative text-center pt-8 pb-6">
-          {/* Cover gradient */}
           <div
             className="absolute -top-16 -left-4 -right-4 sm:-left-6 sm:-right-6 h-[180px] border-b border-border z-0"
             style={{ background: "linear-gradient(135deg, rgba(61,220,132,0.08) 0%, rgba(61,220,132,0.03) 100%)" }}
           />
 
-          {/* Avatar */}
           <div className="relative z-[1] inline-block mb-5">
             {profile.avatar_url ? (
               <img
@@ -191,7 +119,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Name & handle */}
           <h1 className="font-display text-[2rem] tracking-[.05em] leading-none text-white mb-1">
             {profile.display_name || profile.username}
           </h1>
@@ -199,7 +126,6 @@ export default function ProfilePage() {
             @{profile.username}
           </p>
 
-          {/* Stats row */}
           <div className="flex justify-center gap-10 mb-6">
             <div className="flex flex-col items-center gap-1">
               <span className="font-display text-[1.8rem] tracking-[.05em] leading-none text-white">
@@ -227,14 +153,13 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => setEditingUsername(true)}
+            <Link
+              href="/profile/edit"
               className="px-8 py-3 rounded-btn text-[.85rem] font-semibold tracking-[.03em] bg-green text-black hover:opacity-90 transition-opacity"
             >
               Edit profile
-            </button>
+            </Link>
             <button className="px-8 py-3 rounded-btn text-[.85rem] font-semibold tracking-[.03em] bg-surface2 text-white border border-border2 hover:opacity-90 transition-opacity">
               Share
             </button>
@@ -245,125 +170,86 @@ export default function ProfilePage() {
         <section className="mt-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted">About</h2>
+            {hasSocials && (
+              <span className="text-[.78rem] text-green">Socials ›</span>
+            )}
           </div>
 
           <div className="bg-surface border border-border rounded-card p-6">
-            {/* Bio */}
-            {editingBio ? (
-              <div className="mb-4 space-y-3">
-                <textarea
-                  value={bioText}
-                  onChange={(e) => setBioText(e.target.value)}
-                  maxLength={300}
-                  rows={3}
-                  className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-[.88rem] leading-relaxed font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green resize-none"
-                  placeholder="Tell us about yourself..."
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-[.7rem] text-muted2">{bioText.length}/300</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleBioSave}
-                      disabled={bioSaving}
-                      className="px-4 py-2 rounded-btn text-xs font-semibold bg-green text-black hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {bioSaving ? "Saving..." : "Save"}
-                    </button>
-                    <button
-                      onClick={() => { setEditingBio(false); setBioText(profile.bio ?? ""); }}
-                      className="px-4 py-2 rounded-btn text-xs font-semibold bg-surface2 text-white border border-border2 hover:opacity-90 transition-opacity"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : profile.bio ? (
-              <p
-                className="text-[.88rem] leading-relaxed text-white mb-4 cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setEditingBio(true)}
-              >
+            {profile.bio ? (
+              <p className="text-[.88rem] leading-relaxed text-white mb-4">
                 {profile.bio}
               </p>
             ) : (
-              <p
-                className="text-[.85rem] text-muted italic mb-4 cursor-pointer hover:text-white transition-colors"
-                onClick={() => setEditingBio(true)}
-              >
-                Add a bio
+              <p className="text-[.85rem] text-muted italic mb-4">
+                No bio yet
               </p>
             )}
 
-            {/* Meta */}
             <div className="flex flex-col gap-[.65rem]">
               <div className="flex items-center gap-3 text-[.78rem] text-muted">
                 <span className="w-5 text-center text-base">📅</span>
                 <span>Joined {formatJoinDate(profile.created_at)}</span>
               </div>
+
+              {profile.twitter && (
+                <div className="flex items-center gap-3 text-[.78rem] text-muted">
+                  <span className="w-5 text-center text-base font-semibold" style={{ fontFamily: "serif" }}>𝕏</span>
+                  <a
+                    href={`https://x.com/${profile.twitter}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green hover:opacity-80 transition-opacity"
+                  >
+                    @{profile.twitter}
+                  </a>
+                </div>
+              )}
+
+              {profile.instagram && (
+                <div className="flex items-center gap-3 text-[.78rem] text-muted">
+                  <span className="w-5 text-center text-base">📷</span>
+                  <a
+                    href={`https://instagram.com/${profile.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green hover:opacity-80 transition-opacity"
+                  >
+                    @{profile.instagram}
+                  </a>
+                </div>
+              )}
+
+              {profile.tiktok && (
+                <div className="flex items-center gap-3 text-[.78rem] text-muted">
+                  <span className="w-5 text-center text-base">🎵</span>
+                  <a
+                    href={`https://tiktok.com/@${profile.tiktok}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green hover:opacity-80 transition-opacity"
+                  >
+                    @{profile.tiktok}
+                  </a>
+                </div>
+              )}
+
+              {profile.youtube && (
+                <div className="flex items-center gap-3 text-[.78rem] text-muted">
+                  <span className="w-5 text-center text-base">▶️</span>
+                  <a
+                    href={`https://youtube.com/${profile.youtube}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green hover:opacity-80 transition-opacity"
+                  >
+                    {profile.youtube}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </section>
-
-        {/* ── USERNAME EDITOR (shown on Edit profile click) ── */}
-        {editingUsername && (
-          <section className="mt-6">
-            <div className="bg-surface border border-border rounded-card p-6 space-y-4">
-              <h3 className="text-[.9rem] font-semibold tracking-[.02em] text-muted">
-                Change Username
-              </h3>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={newUsername}
-                  onChange={(e) => handleUsernameInput(e.target.value)}
-                  className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-mono text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
-                  placeholder="New username"
-                  maxLength={30}
-                  minLength={3}
-                />
-                <div className="min-h-[16px]">
-                  {usernameStatus === "checking" && (
-                    <p className="text-xs text-muted">Checking...</p>
-                  )}
-                  {usernameStatus === "available" && (
-                    <p className="text-xs text-green">&#10003; Username available</p>
-                  )}
-                  {usernameStatus === "taken" && (
-                    <p className="text-xs text-red">&#10007; Username already taken</p>
-                  )}
-                  {usernameStatus === "invalid" && newUsername.trim().length > 0 && (
-                    <p className="text-xs text-red">3-30 characters, letters, numbers, and underscores only</p>
-                  )}
-                  {usernameStatus === "same" && (
-                    <p className="text-xs text-muted2">Current username</p>
-                  )}
-                  {saveResult?.error && <p className="text-xs text-red">{saveResult.error}</p>}
-                  {saveResult?.success && <p className="text-xs text-green">Username updated!</p>}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className="flex-1 px-4 py-2 rounded-btn text-sm font-semibold bg-green text-black hover:opacity-90 transition-opacity disabled:opacity-50"
-                    disabled={isPending || usernameStatus !== "available" || newUsername.trim() === profile.username}
-                    onClick={handleUsernameSave}
-                  >
-                    {isPending ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    className="flex-1 px-4 py-2 rounded-btn text-sm font-semibold bg-surface2 text-white border border-border2 hover:opacity-90 transition-opacity"
-                    onClick={() => {
-                      setEditingUsername(false);
-                      setNewUsername(profile.username);
-                      setUsernameStatus("same");
-                      setSaveResult(null);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* ── RUSHMORE ──────────────────────────────────────── */}
         <section className="mt-10">
