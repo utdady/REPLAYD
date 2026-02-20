@@ -133,12 +133,12 @@ export function HomeFeed() {
         />
         <section className="px-4 pt-6 pb-8">
           {!showStandings && (
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between">
               <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
               {hasStandings && (
                 <button
                   onClick={() => setShowStandings(true)}
-                  className="text-[.75rem] font-semibold tracking-[.03em] px-3 py-1.5 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white"
+                  className="text-[.65rem] font-semibold tracking-[.06em] uppercase font-mono px-3 py-1.5 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white"
                 >
                   Standings
                 </button>
