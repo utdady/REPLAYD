@@ -138,7 +138,7 @@ export function HomeFeed() {
               {hasStandings && (
                 <button
                   onClick={() => setShowStandings(true)}
-                  className="text-[.65rem] font-semibold tracking-[.06em] uppercase font-mono px-3 py-1.5 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white"
+                  className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white"
                 >
                   Standings
                 </button>
@@ -160,7 +160,7 @@ export function HomeFeed() {
                 </button>
                 <button
                   onClick={() => setShowStandings(false)}
-                  className="text-[.75rem] font-semibold tracking-[.03em] px-3 h-8 rounded-btn bg-green text-black transition-colors"
+                  className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 rounded-btn bg-green text-black transition-colors"
                 >
                   Standings
                 </button>
