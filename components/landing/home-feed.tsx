@@ -138,7 +138,7 @@ export function HomeFeed() {
               {hasStandings && (
                 <button
                   onClick={() => setShowStandings(true)}
-                  className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white"
+                  className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white"
                 >
                   Standings
                 </button>
@@ -150,21 +150,12 @@ export function HomeFeed() {
               {showStandings ? "STANDINGS" : isToday ? "TODAY'S GAMES" : "GAMES"}
             </h2>
             {showStandings && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowStandings(false)}
-                  className="w-8 h-8 rounded-btn bg-surface2 border border-border2 flex items-center justify-center text-muted hover:text-white transition-colors"
-                  aria-label="Back to games"
-                >
-                  ←
-                </button>
-                <button
-                  onClick={() => setShowStandings(false)}
-                  className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 rounded-btn bg-green text-black transition-colors"
-                >
-                  Standings
-                </button>
-              </div>
+              <button
+                onClick={() => setShowStandings(false)}
+                className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn border border-transparent bg-green text-black transition-colors"
+              >
+                Standings
+              </button>
             )}
           </div>
 
