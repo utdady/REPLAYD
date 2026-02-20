@@ -133,30 +133,34 @@ export function HomeFeed() {
         />
         <section className="px-4 pt-6 pb-8">
           <div className="flex items-center justify-between mb-1">
-            <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+            {showStandings ? <span /> : (
+              <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+            )}
             {hasStandings && (
-              <button
-                onClick={() => setShowStandings((v) => !v)}
-                className={`text-[.75rem] font-semibold tracking-[.03em] px-3 py-1.5 rounded-btn transition-colors ${
-                  showStandings
-                    ? "bg-green text-black"
-                    : "bg-surface2 text-muted border border-border2 hover:text-white"
-                }`}
-              >
-                Standings
-              </button>
+              <div className="flex items-center gap-2">
+                {showStandings && (
+                  <button
+                    onClick={() => setShowStandings(false)}
+                    className="w-8 h-8 rounded-btn bg-surface2 border border-border2 flex items-center justify-center text-muted hover:text-white transition-colors"
+                    aria-label="Back to games"
+                  >
+                    ←
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowStandings((v) => !v)}
+                  className={`text-[.75rem] font-semibold tracking-[.03em] px-3 py-1.5 rounded-btn transition-colors ${
+                    showStandings
+                      ? "bg-green text-black"
+                      : "bg-surface2 text-muted border border-border2 hover:text-white"
+                  }`}
+                >
+                  Standings
+                </button>
+              </div>
             )}
           </div>
-          <h2 className="font-display text-3xl md:text-4xl tracking-wide mt-2 mb-4 flex items-center gap-3" style={{ letterSpacing: "0.02em" }}>
-            {showStandings && (
-              <button
-                onClick={() => setShowStandings(false)}
-                className="text-muted hover:text-white transition-colors text-[1.2rem] -ml-1"
-                aria-label="Back to games"
-              >
-                ←
-              </button>
-            )}
+          <h2 className="font-display text-3xl md:text-4xl tracking-wide mt-2 mb-4" style={{ letterSpacing: "0.02em" }}>
             {showStandings ? "STANDINGS" : isToday ? "TODAY'S GAMES" : "GAMES"}
           </h2>
 
