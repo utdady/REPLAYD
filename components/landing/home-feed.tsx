@@ -133,7 +133,7 @@ export function HomeFeed() {
         />
         <section className="px-4 pt-6 pb-8">
           {!showStandings && (
-            <div className="flex items-center justify-between">
+            <div className={`flex items-center justify-between ${isToday ? "mb-4" : ""}`}>
               <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
               {hasStandings && (
                 <button
@@ -145,19 +145,21 @@ export function HomeFeed() {
               )}
             </div>
           )}
-          <div className="flex items-center justify-between mt-2 mb-4">
-            <h2 className="font-display text-3xl md:text-4xl tracking-wide" style={{ letterSpacing: "0.02em" }}>
-              {showStandings ? "STANDINGS" : isToday ? "TODAY'S GAMES" : "GAMES"}
-            </h2>
-            {showStandings && (
-              <button
-                onClick={() => setShowStandings(false)}
-                className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn border border-transparent bg-green text-black transition-colors"
-              >
-                Standings
-              </button>
-            )}
-          </div>
+          {!(showStandings === false && isToday) && (
+            <div className="flex items-center justify-between mt-2 mb-4">
+              <h2 className="font-display text-3xl md:text-4xl tracking-wide" style={{ letterSpacing: "0.02em" }}>
+                {showStandings ? "STANDINGS" : "GAMES"}
+              </h2>
+              {showStandings && (
+                <button
+                  onClick={() => setShowStandings(false)}
+                  className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn border border-transparent bg-green text-black transition-colors"
+                >
+                  Standings
+                </button>
+              )}
+            </div>
+          )}
 
           {showStandings ? (
             standingsLoading ? (
