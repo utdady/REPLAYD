@@ -147,9 +147,15 @@ export function HomeFeed() {
           )}
           {!(showStandings === false && isToday) && (
             <div className="flex items-center justify-between mt-2 mb-4">
-              <h2 className="font-display text-3xl md:text-4xl tracking-wide" style={{ letterSpacing: "0.02em" }}>
-                {showStandings ? "STANDINGS" : "GAMES"}
-              </h2>
+              {showStandings ? (
+                <span className="text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono text-white">
+                  STANDINGS
+                </span>
+              ) : (
+                <h2 className="font-display text-3xl md:text-4xl tracking-wide" style={{ letterSpacing: "0.02em" }}>
+                  GAMES
+                </h2>
+              )}
               {showStandings && (
                 <button
                   onClick={() => setShowStandings(false)}
