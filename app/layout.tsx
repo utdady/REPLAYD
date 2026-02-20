@@ -11,8 +11,8 @@ const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "
 
 // Inlined to avoid "Cannot access appleWebApp.startupImage on the server" (Next.js metadata + imported object)
 export const metadata: Metadata = {
-  title: "REPLAYD — Log Every Match",
-  description: "The diary for football fans. Log every match you watch, rate it as a spectacle, write reviews, build lists.",
+  title: "REPLAYD — Log Every Game",
+  description: "The diary for football fans. Log every game you watch, rate it as a spectacle, write reviews, build lists.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

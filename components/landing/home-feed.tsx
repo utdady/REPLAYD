@@ -107,12 +107,12 @@ export function HomeFeed() {
   const renderFormDots = (form: string | null) => {
     if (!form) return null;
     return (
-      <div className="flex gap-[3px]">
+      <div className="flex gap-1">
         {form.split(",").slice(-5).map((r, i) => (
           <span
             key={i}
-            className={`w-[6px] h-[6px] rounded-full ${
-              r.trim() === "W" ? "bg-green" : r.trim() === "D" ? "bg-yellow-400" : "bg-red-500"
+            className={`w-2 h-2 rounded-full ${
+              r.trim() === "W" ? "bg-green" : r.trim() === "D" ? "bg-yellow-400" : "bg-[#f43f5e]"
             }`}
           />
         ))}
@@ -147,8 +147,17 @@ export function HomeFeed() {
               </button>
             )}
           </div>
-          <h2 className="font-display text-3xl md:text-4xl tracking-wide mt-2 mb-4" style={{ letterSpacing: "0.02em" }}>
-            {showStandings ? "STANDINGS" : isToday ? "TODAY'S MATCHES" : "MATCHES"}
+          <h2 className="font-display text-3xl md:text-4xl tracking-wide mt-2 mb-4 flex items-center gap-3" style={{ letterSpacing: "0.02em" }}>
+            {showStandings && (
+              <button
+                onClick={() => setShowStandings(false)}
+                className="text-muted hover:text-white transition-colors text-[1.2rem] -ml-1"
+                aria-label="Back to games"
+              >
+                ←
+              </button>
+            )}
+            {showStandings ? "STANDINGS" : isToday ? "TODAY'S GAMES" : "GAMES"}
           </h2>
 
           {showStandings ? (
@@ -212,7 +221,7 @@ export function HomeFeed() {
           ) : loading ? (
             <p className="text-sm text-muted">Loading…</p>
           ) : matches.length === 0 ? (
-            <p className="text-sm text-muted">No matches on this date for {selectedYear}.</p>
+            <p className="text-sm text-muted">No games on this date for {selectedYear}.</p>
           ) : (
             <div className="space-y-3">
               {matches.map((m) => (

@@ -23,10 +23,10 @@ export function Cta() {
       <h2 className="font-display text-[clamp(2.6rem,4.5vw,4rem)] leading-[0.96] tracking-[0.03em] mb-4 relative">
         START YOUR
         <br />
-        MATCH DIARY
+        GAME DIARY
       </h2>
       <p className="text-[0.95rem] text-muted leading-[1.72] max-w-[340px] mx-auto mb-9 relative">
-        Join fans logging every match, rating every spectacle, and building their football memory.
+        Join fans logging every game, rating every spectacle, and building their football memory.
       </p>
       <form
         onSubmit={handleSubmit}

@@ -11,7 +11,7 @@ const DATE_DAYS = [
   { dow: "Sun", num: "19" },
 ];
 const TABS = [
-  { label: "Matches", active: true },
+  { label: "Games", active: true },
   { label: "Reviews", active: false },
   { label: "Lists", active: false },
   { label: "Journal", active: false },
@@ -93,7 +93,7 @@ export function PhoneMockup() {
             {/* Today's matches */}
             <div className="px-4 pb-1">
               <div className="flex items-center justify-between py-2.5 pb-2">
-                <span className="text-[0.72rem] font-semibold text-white">Today&apos;s Matches</span>
+                <span className="text-[0.72rem] font-semibold text-white">Today&apos;s Games</span>
                 <span className="text-[0.62rem] text-muted2">All ›</span>
               </div>
               <div className="flex flex-col gap-1">
@@ -213,7 +213,7 @@ export function PhoneMockup() {
           <div className="flex items-center justify-around py-3.5 pb-5 pt-2 bg-surface border-t border-border flex-shrink-0">
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-base opacity-100">⚽</span>
-              <span className="text-[0.46rem] tracking-wider text-green">Matches</span>
+              <span className="text-[0.46rem] tracking-wider text-green">Games</span>
             </div>
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-base opacity-40">🔍</span>

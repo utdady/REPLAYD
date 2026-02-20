@@ -12,14 +12,14 @@ export function Hero() {
         <h1 className="font-display text-[clamp(4rem,8.5vw,7.5rem)] leading-[0.92] tracking-[0.02em] mb-7">
           EVERY
           <br />
-          MATCH
+          GAME
           <br />
           YOU&apos;VE
           <br />
           <em className="not-italic text-green">EVER SEEN.</em>
         </h1>
         <p className="text-base leading-[1.72] text-muted max-w-[400px] mb-9">
-          The diary for football fans. <strong className="text-white font-normal">Log every match</strong> you watch,
+          The diary for football fans. <strong className="text-white font-normal">Log every game</strong> you watch,
           rate it as a spectacle, write reviews, build lists — and see what your
           community is watching in real time.
         </p>

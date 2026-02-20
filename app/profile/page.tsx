@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const [following, setFollowing] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"matches" | "reviews" | "lists">("matches");
+  const [activeTab, setActiveTab] = useState<"games" | "reviews" | "lists">("games");
 
   // Follow list modal
   const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
@@ -237,7 +237,7 @@ export default function ProfilePage() {
                 {stats.matches_logged}
               </span>
               <span className="font-mono text-[.62rem] tracking-[.1em] uppercase text-muted">
-                Matches
+                Games
               </span>
             </div>
             <div className="flex flex-col items-center gap-1">
@@ -338,7 +338,7 @@ export default function ProfilePage() {
             {[1, 2, 3, 4].map((slot) => (
               <div key={slot} className="min-w-[140px] shrink-0 aspect-square bg-surface2 border border-dashed border-border2 rounded-card flex flex-col items-center justify-center gap-2">
                 <span className="text-2xl opacity-30">+</span>
-                <span className="font-mono text-[.62rem] tracking-[.08em] uppercase text-muted2">Add match</span>
+                <span className="font-mono text-[.62rem] tracking-[.08em] uppercase text-muted2">Add game</span>
               </div>
             ))}
           </div>
@@ -352,7 +352,7 @@ export default function ProfilePage() {
           <div className="bg-surface border border-dashed border-border2 rounded-card py-10 px-6 text-center">
             <div className="text-2xl mb-3 opacity-30">📊</div>
             <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">Coming Soon</div>
-            <p className="text-[.78rem] text-muted leading-relaxed">Match frequency, rating distribution, favorite teams, and more.</p>
+            <p className="text-[.78rem] text-muted leading-relaxed">Game frequency, rating distribution, favorite teams, and more.</p>
           </div>
         </section>
 
@@ -370,7 +370,7 @@ export default function ProfilePage() {
 
         {/* ── TABS ──────────────────────────────────────────── */}
         <div className="flex border-b border-border mt-10 mb-6">
-          {(["matches", "reviews", "lists"] as const).map((tab) => (
+          {(["games", "reviews", "lists"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -383,7 +383,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="py-8 text-center text-muted text-[.85rem]">
-          {activeTab === "matches" && "Recent match logs will appear here..."}
+          {activeTab === "games" && "Recent game logs will appear here..."}
           {activeTab === "reviews" && "Your reviews will appear here..."}
           {activeTab === "lists" && "Your lists will appear here..."}
         </div>

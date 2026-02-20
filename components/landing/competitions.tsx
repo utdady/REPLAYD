@@ -1,10 +1,10 @@
 const COMPS = [
-  { flag: "🏴", name: "Premier League", sub: "380 matches · 20 clubs" },
-  { flag: "🇪🇸", name: "La Liga", sub: "380 matches · 20 clubs" },
-  { flag: "🇩🇪", name: "Bundesliga", sub: "306 matches · 18 clubs" },
-  { flag: "🇮🇹", name: "Serie A", sub: "380 matches · 20 clubs" },
-  { flag: "🇫🇷", name: "Ligue 1", sub: "306 matches · 18 clubs" },
-  { flag: "⭐", name: "Champions League", sub: "189 matches · Group + KO" },
+  { flag: "🏴", name: "Premier League", sub: "380 games · 20 clubs" },
+  { flag: "🇪🇸", name: "La Liga", sub: "380 games · 20 clubs" },
+  { flag: "🇩🇪", name: "Bundesliga", sub: "306 games · 18 clubs" },
+  { flag: "🇮🇹", name: "Serie A", sub: "380 games · 20 clubs" },
+  { flag: "🇫🇷", name: "Ligue 1", sub: "306 games · 18 clubs" },
+  { flag: "⭐", name: "Champions League", sub: "189 games · Group + KO" },
 ];
 
 export function Competitions() {
@@ -18,9 +18,9 @@ export function Competitions() {
         <h2 className="font-display text-[clamp(2.6rem,4.5vw,4rem)] leading-[0.96] tracking-[0.03em] mb-12">
           SIX COMPETITIONS.
           <br />
-          EVERY MATCH.
+          EVERY GAME.
           <br />
-          2024/25.
+          2025/26.
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border rounded-section overflow-hidden">
           {COMPS.map((c) => (

@@ -83,7 +83,7 @@ export default async function MatchDetailPage({
           <h3 className="text-sm font-semibold mb-4">Community logs</h3>
           <div className="space-y-3">
             {logs.length === 0 ? (
-              <p className="text-sm text-muted">No logs yet. Be the first to log this match.</p>
+              <p className="text-sm text-muted">No logs yet. Be the first to log this game.</p>
             ) : (
               logs.map((log) => (
                 <LogFeedItem
@@ -105,7 +105,7 @@ export default async function MatchDetailPage({
         <div className="fixed bottom-20 md:bottom-6 left-0 right-0 max-w-2xl mx-auto px-4 z-40">
           <Link href={`/matches/${id}/log`} className="block">
             <Button variant="primary" className="w-full py-3">
-              Log this match
+              Log this game
             </Button>
           </Link>
         </div>

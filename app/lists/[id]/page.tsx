@@ -7,7 +7,7 @@ async function getList(id: string) {
   return {
     id,
     title: "Best UCL nights",
-    description: "My favourite Champions League matches this season.",
+    description: "My favourite Champions League games this season.",
     creator: { username: "footy_fan" },
     ranked: true,
   };

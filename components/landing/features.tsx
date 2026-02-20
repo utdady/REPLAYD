@@ -3,19 +3,19 @@ const FEATURES = [
     num: "01",
     icon: "📺",
     title: "LOG IT",
-    desc: "Watched a match? Find it, tap log. Mark when you watched it, whether it was a rewatch, and flag spoilers for your followers.",
+    desc: "Watched a game? Find it, tap log. Mark when you watched it, whether it was a rewatch, and flag spoilers for your followers.",
   },
   {
     num: "02",
     icon: "⭐",
     title: "RATE IT",
-    desc: "Half-star ratings 0.5 to 5. Rate the match as a spectacle — the tension, the quality, the occasion. Not just whether your team won.",
+    desc: "Half-star ratings 0.5 to 5. Rate the game as a spectacle — the tension, the quality, the occasion. Not just whether your team won.",
   },
   {
     num: "03",
     icon: "📋",
     title: "LIST IT",
-    desc: "Build lists. Every Clasico you've seen. Greatest comebacks. Matches that broke your heart. Rank them. Share them. Own them.",
+    desc: "Build lists. Every Clasico you've seen. Greatest comebacks. Games that broke your heart. Rank them. Share them. Own them.",
   },
 ];
 
