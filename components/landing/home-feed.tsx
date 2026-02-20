@@ -229,7 +229,7 @@ export function HomeFeed() {
                   key={m.id}
                   id={String(m.id)}
                   competition={CODE_TO_LABEL[m.competition_code] ?? m.competition_name}
-                  season={formatSeasonLabel(m.season_year)}
+                  season={formatSeasonLabel(FEED_SEASON_YEAR)}
                   dateLabel={formatDateLabel(m.utc_date)}
                   time={formatTime(m.utc_date)}
                   home={{
