@@ -8,7 +8,7 @@ import { ScrollRow } from "@/components/feed/scroll-row";
 import { MatchCard } from "@/components/match/match-card";
 import { MatchPoster } from "@/components/match/match-poster";
 import { SectionEyebrow } from "@/components/layout/section-eyebrow";
-import { getMatchesForFeed } from "@/app/actions/feed";
+import { getMatchesForFeed, getStandings } from "@/app/actions/feed";
 import { FEED_SEASON_YEAR } from "@/lib/feed-constants";
 
 /** DB competition code → display label for chips/badges */
@@ -29,6 +29,8 @@ const FROM_FRIENDS = [
   { id: "f1", competition: "UCL", home: { name: "Inter", crest: "🔵" }, away: { name: "Atlético", crest: "🔴" }, homeScore: 2, awayScore: 0, friend: { username: "footy_fan", avatarUrl: null } },
 ];
 
+const COMPS_WITHOUT_STANDINGS = new Set(["All", "UCL"]);
+
 function formatDateLabel(utcIso: string): string {
   return format(new Date(utcIso), "EEE d MMM");
 }
@@ -36,35 +38,37 @@ function formatTime(utcIso: string): string {
   return format(new Date(utcIso), "HH:mm");
 }
 
+type StandingRow = Awaited<ReturnType<typeof getStandings>>[number];
+
 export function HomeFeed() {
   const currentYear = new Date().getFullYear();
   const today = startOfDay(new Date());
-  
-  // Default to today's date and current year
+
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeComp, setActiveComp] = useState("All");
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear); // Default to current year
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [matches, setMatches] = useState<Awaited<ReturnType<typeof getMatchesForFeed>>>([]);
   const [loading, setLoading] = useState(true);
 
+  const [showStandings, setShowStandings] = useState(false);
+  const [standings, setStandings] = useState<StandingRow[]>([]);
+  const [standingsLoading, setStandingsLoading] = useState(false);
+
   const dateYmd = format(selectedDate, "yyyy-MM-dd");
   const isToday = selectedDate.getTime() === today.getTime();
+  const hasStandings = !COMPS_WITHOUT_STANDINGS.has(activeComp);
 
-  // When year changes, if selectedDate is not in that year, adjust it to today (if today is in that year) or Jan 1 of that year
-  // This ensures the date strip shows dates from the selected year
   useEffect(() => {
     const selectedDateYear = selectedDate.getFullYear();
     if (selectedDateYear !== selectedYear) {
       const todayYear = today.getFullYear();
       if (todayYear === selectedYear) {
-        // If changing to current year, use today's date
         setSelectedDate(today);
       } else {
-        // Otherwise, use Jan 1 of the selected year
         setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
       }
     }
-  }, [selectedYear]); // Only depend on selectedYear, not selectedDate to avoid loops
+  }, [selectedYear]);
 
   useEffect(() => {
     setLoading(true);
@@ -74,12 +78,46 @@ export function HomeFeed() {
       .finally(() => setLoading(false));
   }, [dateYmd, activeComp, selectedYear]);
 
-  // Helper function to format season year into season label (e.g. 2024 -> "2024/25")
-  const formatSeasonLabel = (seasonYear: number | null | undefined): string | null => {
-    if (!seasonYear || typeof seasonYear !== 'number') {
-      return null;
+  useEffect(() => {
+    if (!hasStandings) {
+      setShowStandings(false);
+      setStandings([]);
+      return;
     }
+    if (showStandings && standings.length === 0) {
+      setStandingsLoading(true);
+      getStandings(activeComp)
+        .then(setStandings)
+        .catch(() => setStandings([]))
+        .finally(() => setStandingsLoading(false));
+    }
+  }, [showStandings, activeComp, hasStandings]);
+
+  // Reset standings when comp changes
+  useEffect(() => {
+    setShowStandings(false);
+    setStandings([]);
+  }, [activeComp]);
+
+  const formatSeasonLabel = (seasonYear: number | null | undefined): string | null => {
+    if (!seasonYear || typeof seasonYear !== "number") return null;
     return `${seasonYear}/${String(seasonYear + 1).slice(-2)}`;
+  };
+
+  const renderFormDots = (form: string | null) => {
+    if (!form) return null;
+    return (
+      <div className="flex gap-[3px]">
+        {form.split(",").slice(-5).map((r, i) => (
+          <span
+            key={i}
+            className={`w-[6px] h-[6px] rounded-full ${
+              r.trim() === "W" ? "bg-green" : r.trim() === "D" ? "bg-yellow-400" : "bg-red-500"
+            }`}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -94,11 +132,84 @@ export function HomeFeed() {
           yearOptions={[currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2]}
         />
         <section className="px-4 pt-6 pb-8">
-          <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+          <div className="flex items-center justify-between mb-1">
+            <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+            {hasStandings && (
+              <button
+                onClick={() => setShowStandings((v) => !v)}
+                className={`text-[.75rem] font-semibold tracking-[.03em] px-3 py-1.5 rounded-btn transition-colors ${
+                  showStandings
+                    ? "bg-green text-black"
+                    : "bg-surface2 text-muted border border-border2 hover:text-white"
+                }`}
+              >
+                Standings
+              </button>
+            )}
+          </div>
           <h2 className="font-display text-3xl md:text-4xl tracking-wide mt-2 mb-4" style={{ letterSpacing: "0.02em" }}>
-            {isToday ? "TODAY'S MATCHES" : "MATCHES"}
+            {showStandings ? "STANDINGS" : isToday ? "TODAY'S MATCHES" : "MATCHES"}
           </h2>
-          {loading ? (
+
+          {showStandings ? (
+            standingsLoading ? (
+              <p className="text-sm text-muted">Loading standings…</p>
+            ) : standings.length === 0 ? (
+              <p className="text-sm text-muted">No standings data available yet.</p>
+            ) : (
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full min-w-[560px] text-[.78rem]">
+                  <thead>
+                    <tr className="text-muted font-mono text-[.65rem] tracking-[.08em] uppercase border-b border-border">
+                      <th className="text-left py-2 pr-2 w-8">#</th>
+                      <th className="text-left py-2 pr-2">Team</th>
+                      <th className="text-center py-2 px-1 w-8">P</th>
+                      <th className="text-center py-2 px-1 w-8">W</th>
+                      <th className="text-center py-2 px-1 w-8">D</th>
+                      <th className="text-center py-2 px-1 w-8">L</th>
+                      <th className="text-center py-2 px-1 w-8">GF</th>
+                      <th className="text-center py-2 px-1 w-8">GA</th>
+                      <th className="text-center py-2 px-1 w-10">GD</th>
+                      <th className="text-center py-2 px-1 w-10 font-bold">Pts</th>
+                      <th className="text-center py-2 pl-1 w-16">Form</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row) => (
+                      <tr key={row.team_id} className="border-b border-border/50 hover:bg-surface2/50 transition-colors">
+                        <td className="py-2.5 pr-2 text-muted font-mono">{row.position}</td>
+                        <td className="py-2.5 pr-2">
+                          <div className="flex items-center gap-2">
+                            {row.crest_url ? (
+                              <img src={row.crest_url} alt="" className="w-5 h-5 object-contain shrink-0" />
+                            ) : (
+                              <div className="w-5 h-5 rounded bg-surface3 shrink-0" />
+                            )}
+                            <span className="text-white font-medium truncate max-w-[140px]">
+                              {row.short_name || row.team_name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="text-center py-2.5 px-1 text-muted">{row.played_games}</td>
+                        <td className="text-center py-2.5 px-1 text-muted">{row.won}</td>
+                        <td className="text-center py-2.5 px-1 text-muted">{row.draw}</td>
+                        <td className="text-center py-2.5 px-1 text-muted">{row.lost}</td>
+                        <td className="text-center py-2.5 px-1 text-muted">{row.goals_for}</td>
+                        <td className="text-center py-2.5 px-1 text-muted">{row.goals_against}</td>
+                        <td className="text-center py-2.5 px-1 text-white">
+                          {row.goal_difference > 0 ? `+${row.goal_difference}` : row.goal_difference}
+                        </td>
+                        <td className="text-center py-2.5 px-1 text-white font-bold">{row.points}</td>
+                        <td className="py-2.5 pl-1">
+                          <div className="flex justify-center">{renderFormDots(row.form)}</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : loading ? (
             <p className="text-sm text-muted">Loading…</p>
           ) : matches.length === 0 ? (
             <p className="text-sm text-muted">No matches on this date for {selectedYear}.</p>

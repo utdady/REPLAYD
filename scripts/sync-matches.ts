@@ -29,8 +29,8 @@ const API_KEY  = process.env.FOOTBALL_DATA_API_KEY ?? "";
 const DRY_RUN  = process.env.DRY_RUN === "true";
 const DEBUG    = process.env.DEBUG === "true";
 
-// Season year to sync (2024 = 2024/25). We only sync this one season for now.
-const SYNC_SEASON = parseInt(process.env.SYNC_SEASON ?? "2024", 10);
+// Season year to sync (2025 = 2025/26).
+const SYNC_SEASON = parseInt(process.env.SYNC_SEASON ?? "2025", 10);
 
 // football-data.org competition IDs we track
 const COMPETITION_IDS = [2021, 2014, 2002, 2019, 2015, 2001];
@@ -69,6 +69,32 @@ interface FDMatchesResponse {
   matches:    FDMatch[];
   resultSet?: { count: number };
 }
+
+interface FDStandingEntry {
+  position: number;
+  team: FDTeam;
+  playedGames: number;
+  form: string | null;
+  won: number;
+  draw: number;
+  lost: number;
+  points: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+}
+
+interface FDStandingsResponse {
+  standings: {
+    stage: string;
+    type: string;
+    group: string | null;
+    table: FDStandingEntry[];
+  }[];
+}
+
+// CUP competitions don't have standings (API returns 404)
+const CUP_COMPETITION_IDS = new Set([2001]);
 
 interface FDTeamsResponse {
   teams: FDTeam[];
@@ -196,6 +222,39 @@ async function upsertMatch(
   );
 }
 
+async function upsertStanding(
+  pool: Pool,
+  competitionId: number,
+  seasonId: number,
+  entry: FDStandingEntry
+) {
+  if (DRY_RUN) { debug("DRY upsertStanding", entry.team.name, entry.position); return; }
+  await pool.query(
+    `INSERT INTO standings (
+       competition_id, season_id, team_id,
+       position, played_games, won, draw, lost, points,
+       goals_for, goals_against, goal_difference, form
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+     ON CONFLICT (competition_id, season_id, team_id) DO UPDATE SET
+       position        = EXCLUDED.position,
+       played_games    = EXCLUDED.played_games,
+       won             = EXCLUDED.won,
+       draw            = EXCLUDED.draw,
+       lost            = EXCLUDED.lost,
+       points          = EXCLUDED.points,
+       goals_for       = EXCLUDED.goals_for,
+       goals_against   = EXCLUDED.goals_against,
+       goal_difference = EXCLUDED.goal_difference,
+       form            = EXCLUDED.form,
+       updated_at      = NOW()`,
+    [
+      competitionId, seasonId, entry.team.id,
+      entry.position, entry.playedGames, entry.won, entry.draw, entry.lost, entry.points,
+      entry.goalsFor, entry.goalsAgainst, entry.goalDifference, entry.form,
+    ]
+  );
+}
+
 async function linkTeamToSeason(
   pool: Pool,
   competitionId: number,
@@ -257,6 +316,31 @@ async function syncCompetition(pool: Pool, competitionId: number) {
   }
 
   log(`   ✓ ${upserted} matches synced`);
+
+  // 4. Fetch standings (skip CUP competitions — API returns 404)
+  if (!CUP_COMPETITION_IDS.has(competitionId)) {
+    try {
+      const standingsData = await apiFetch<FDStandingsResponse>(
+        `/competitions/${competitionId}/standings?season=${SYNC_SEASON}`
+      );
+      await sleep(RATE_LIMIT_MS);
+
+      const totalStanding = standingsData.standings.find((s) => s.type === "TOTAL");
+      if (totalStanding) {
+        for (const entry of totalStanding.table) {
+          await upsertTeam(pool, entry.team);
+          await upsertStanding(pool, competitionId, seasonId, entry);
+        }
+        log(`   ✓ ${totalStanding.table.length} standings rows synced`);
+      } else {
+        log(`   ⚠ No TOTAL standings found`);
+      }
+    } catch (err) {
+      log(`   ⚠ Standings fetch failed (may not be available):`, err);
+    }
+  } else {
+    log(`   ⏭ Skipping standings for CUP competition`);
+  }
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

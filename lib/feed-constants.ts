@@ -1,5 +1,5 @@
-/** Season we support in the feed for now (2024/25 only). */
-export const FEED_SEASON_YEAR = 2024;
+/** Season we support in the feed (2025/26). */
+export const FEED_SEASON_YEAR = 2025;
 
 /** Map UI chip label to DB competition code for filtering. */
 export const CHIP_TO_CODE: Record<string, string> = {

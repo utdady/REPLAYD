@@ -3,6 +3,58 @@
 import { query } from "@/lib/db";
 import { CHIP_TO_CODE, FEED_SEASON_YEAR } from "@/lib/feed-constants";
 
+interface StandingRow {
+  team_id: number;
+  team_name: string;
+  short_name: string | null;
+  tla: string | null;
+  crest_url: string | null;
+  position: number;
+  played_games: number;
+  won: number;
+  draw: number;
+  lost: number;
+  points: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  form: string | null;
+  [key: string]: unknown;
+}
+
+export async function getStandings(competitionCode: string): Promise<StandingRow[]> {
+  const code = CHIP_TO_CODE[competitionCode] ?? "";
+  if (!code) return [];
+
+  const sql = `
+    SELECT
+      t.id AS team_id,
+      t.name AS team_name,
+      t.short_name,
+      t.tla,
+      t.crest_url,
+      st.position,
+      st.played_games,
+      st.won,
+      st.draw,
+      st.lost,
+      st.points,
+      st.goals_for,
+      st.goals_against,
+      st.goal_difference,
+      st.form
+    FROM standings st
+    JOIN competitions c ON c.id = st.competition_id
+    JOIN seasons s ON s.id = st.season_id
+    JOIN teams t ON t.id = st.team_id
+    WHERE c.code = $1
+      AND s.year = $2
+    ORDER BY st.position ASC
+  `;
+  const { rows } = await query<StandingRow>(sql, [code, FEED_SEASON_YEAR]);
+  return rows;
+}
+
 interface FeedMatchRow {
   id: number;
   utc_date: string;

@@ -75,6 +75,25 @@ CREATE TABLE IF NOT EXISTS competition_teams (
   PRIMARY KEY (competition_id, season_id, team_id)
 );
 
+-- League standings (synced from football-data.org, TOTAL type only)
+CREATE TABLE IF NOT EXISTS standings (
+  competition_id  INTEGER NOT NULL REFERENCES competitions(id),
+  season_id       INTEGER NOT NULL REFERENCES seasons(id),
+  team_id         INTEGER NOT NULL REFERENCES teams(id),
+  position        INTEGER NOT NULL,
+  played_games    INTEGER NOT NULL DEFAULT 0,
+  won             INTEGER NOT NULL DEFAULT 0,
+  draw            INTEGER NOT NULL DEFAULT 0,
+  lost            INTEGER NOT NULL DEFAULT 0,
+  points          INTEGER NOT NULL DEFAULT 0,
+  goals_for       INTEGER NOT NULL DEFAULT 0,
+  goals_against   INTEGER NOT NULL DEFAULT 0,
+  goal_difference INTEGER NOT NULL DEFAULT 0,
+  form            TEXT,
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (competition_id, season_id, team_id)
+);
+
 -- ============================================================
 -- USER DATA
 -- ============================================================
