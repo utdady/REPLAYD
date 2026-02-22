@@ -13,7 +13,7 @@ export interface DateStripProps {
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const CELL_MIN_W = "min-w-[44px]";
-const CELL_HEIGHT = "h-10";
+const CELL_HEIGHT = "h-11";
 
 const CalendarIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -46,7 +46,7 @@ export function DateStrip({
 
   return (
     <div className={`px-4 pb-2 ${className}`}>
-      <div className="flex gap-0 min-w-0 overflow-x-auto date-strip-scroll">
+      <div className="flex gap-0 min-w-0 overflow-x-auto date-strip-scroll py-1.5">
         <button
           ref={leftBtnRef}
           type="button"
@@ -75,8 +75,8 @@ export function DateStrip({
               onClick={() => onSelectDate(d)}
               className={`shrink-0 flex flex-col items-center justify-center py-1.5 px-2 rounded-md ${CELL_MIN_W} ${CELL_HEIGHT} transition-colors ${btnClass}`}
             >
-              <span className="text-[9px] font-mono uppercase tracking-wider leading-tight">{DOW[d.getDay()]}</span>
-              <span className="text-xs font-mono font-medium leading-tight">{format(d, "d")}</span>
+              <span className="text-[.7rem] font-mono uppercase tracking-wider leading-tight">{DOW[d.getDay()]}</span>
+              <span className="text-sm font-mono font-medium leading-tight">{format(d, "d")}</span>
             </button>
           );
         })}
