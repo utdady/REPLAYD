@@ -1,92 +1,74 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { addDays, format, isToday, startOfDay } from "date-fns";
+import { DatePickerPopover } from "@/components/feed/date-picker-popover";
 
 export interface DateStripProps {
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
-  /** Selected year (e.g. 2024). Optional; if provided, shows year dropdown. */
-  selectedYear?: number;
-  onSelectYear?: (year: number) => void;
-  /** Years to show in dropdown (e.g. [2023, 2024, 2025]). Defaults to current ± 2. */
-  yearOptions?: number[];
   className?: string;
 }
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const CalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
 export function DateStrip({
   selectedDate,
   onSelectDate,
-  selectedYear,
-  onSelectYear,
-  yearOptions,
   className = "",
 }: DateStripProps) {
-  const currentYear = new Date().getFullYear();
-  const years = yearOptions ?? [currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
-  const year = selectedYear ?? currentYear;
+  const today = startOfDay(new Date());
+  // 14-day window: 7 days before today, today, 6 days after
+  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i - 7));
 
-  // Generate dates relevant to the selected year and selectedDate
-  // If selectedDate is in the selected year, center dates around selectedDate
-  // Otherwise, center dates around Jan 1 of the selected year
-  const days = useMemo(() => {
-    const today = startOfDay(new Date());
-    let referenceDate = selectedDate;
-    
-    // If a year is selected, check if selectedDate is in that year
-    if (onSelectYear) {
-      const selectedDateYear = selectedDate.getFullYear();
-      if (selectedDateYear !== year) {
-        // Selected date is not in the selected year, use Jan 1 of selected year
-        referenceDate = startOfDay(new Date(year, 0, 1));
-      }
-      // Otherwise, use selectedDate as reference (it's already in the correct year)
-    } else {
-      // No year selector, use selectedDate or today
-      referenceDate = selectedDate;
-    }
-    
-    // Generate 60 days (30 before, 30 after reference date) for better scrolling
-    const start = addDays(referenceDate, -30);
-    return Array.from({ length: 60 }, (_, i) => addDays(start, i));
-  }, [selectedDate, year, onSelectYear]);
+  const [calendarOpen, setCalendarOpen] = useState<"left" | "right" | null>(null);
+  const leftBtnRef = useRef<HTMLButtonElement>(null);
+  const rightBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handlePickDate = (date: Date) => {
+    onSelectDate(date);
+    setCalendarOpen(null);
+  };
 
   return (
-    <div className={`flex items-stretch gap-2 px-4 pb-2 ${className}`}>
-      {onSelectYear && (
-        <div className="shrink-0 flex flex-col justify-center">
-          <label htmlFor="feed-year" className="text-[10px] font-mono uppercase tracking-wider text-muted mb-0.5">
-            Year
-          </label>
-          <select
-            id="feed-year"
-            value={year}
-            onChange={(e) => onSelectYear(Number(e.target.value))}
-            className="h-9 min-w-[72px] rounded-md border border-border2 bg-surface3 px-2 text-xs font-mono text-white focus:outline-none focus:ring-1 focus:ring-green"
-            aria-label="Filter by year"
-          >
-            {years.map((y) => (
-              <option key={y} value={y} className="bg-surface2 text-white">
-                {y}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <div className="flex gap-0 flex-1 min-w-0 overflow-x-auto date-strip-scroll">
+    <div className={`flex items-stretch gap-1 px-4 pb-2 ${className}`}>
+      <button
+        ref={leftBtnRef}
+        type="button"
+        onClick={() => setCalendarOpen((o) => (o === "left" ? null : "left"))}
+        className="shrink-0 flex items-center justify-center w-10 h-[52px] rounded-md text-muted hover:text-white hover:bg-surface3 transition-colors"
+        aria-label="Open calendar"
+      >
+        <CalendarIcon />
+      </button>
+      <div className="flex gap-0 flex-1 min-w-0 overflow-x-auto date-strip-scroll justify-center">
         {days.map((d) => {
-          const active = selectedDate && selectedDate.getTime() === d.getTime();
+          const active = selectedDate.getTime() === d.getTime();
           const isTodayDate = isToday(d);
+          const isBoth = active && isTodayDate;
+          let btnClass = "text-muted hover:text-white";
+          if (isBoth) {
+            btnClass = "bg-green-dim text-green ring-1 ring-green";
+          } else if (active) {
+            btnClass = "bg-green-dim text-green";
+          } else if (isTodayDate) {
+            btnClass = "ring-1 ring-green text-green bg-transparent";
+          }
           return (
             <button
               key={d.toISOString()}
               type="button"
               onClick={() => onSelectDate(d)}
-              className={`shrink-0 flex flex-col items-center py-2 px-3 rounded-md min-w-[52px] transition-colors ${
-                active || isTodayDate ? "bg-green-dim text-green" : "text-muted hover:text-white"
-              }`}
+              className={`shrink-0 flex flex-col items-center py-2 px-3 rounded-md min-w-[52px] transition-colors ${btnClass}`}
             >
               <span className="text-[10px] font-mono uppercase tracking-wider">{DOW[d.getDay()]}</span>
               <span className="text-sm font-mono font-medium">{format(d, "d")}</span>
@@ -94,6 +76,24 @@ export function DateStrip({
           );
         })}
       </div>
+      <button
+        ref={rightBtnRef}
+        type="button"
+        onClick={() => setCalendarOpen((o) => (o === "right" ? null : "right"))}
+        className="shrink-0 flex items-center justify-center w-10 h-[52px] rounded-md text-muted hover:text-white hover:bg-surface3 transition-colors"
+        aria-label="Open calendar"
+      >
+        <CalendarIcon />
+      </button>
+      {calendarOpen && (
+        <DatePickerPopover
+          selectedDate={selectedDate}
+          onSelectDate={handlePickDate}
+          onClose={() => setCalendarOpen(null)}
+          anchorRef={calendarOpen === "left" ? leftBtnRef : rightBtnRef}
+          align={calendarOpen === "left" ? "start" : "end"}
+        />
+      )}
     </div>
   );
 }

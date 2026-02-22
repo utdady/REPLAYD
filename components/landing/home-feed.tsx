@@ -41,12 +41,10 @@ function formatTime(utcIso: string): string {
 type StandingRow = Awaited<ReturnType<typeof getStandings>>[number];
 
 export function HomeFeed() {
-  const currentYear = new Date().getFullYear();
   const today = startOfDay(new Date());
 
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeComp, setActiveComp] = useState("All");
-  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [matches, setMatches] = useState<Awaited<ReturnType<typeof getMatchesForFeed>>>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,24 +57,12 @@ export function HomeFeed() {
   const hasStandings = !COMPS_WITHOUT_STANDINGS.has(activeComp);
 
   useEffect(() => {
-    const selectedDateYear = selectedDate.getFullYear();
-    if (selectedDateYear !== selectedYear) {
-      const todayYear = today.getFullYear();
-      if (todayYear === selectedYear) {
-        setSelectedDate(today);
-      } else {
-        setSelectedDate(startOfDay(new Date(selectedYear, 0, 1)));
-      }
-    }
-  }, [selectedYear]);
-
-  useEffect(() => {
     setLoading(true);
-    getMatchesForFeed(dateYmd, activeComp, selectedYear)
+    getMatchesForFeed(dateYmd, activeComp, selectedDate.getFullYear())
       .then(setMatches)
       .catch(() => setMatches([]))
       .finally(() => setLoading(false));
-  }, [dateYmd, activeComp, selectedYear]);
+  }, [dateYmd, activeComp, selectedDate.getTime()]);
 
   useEffect(() => {
     if (!hasStandings) {
@@ -127,9 +113,6 @@ export function HomeFeed() {
         <DateStrip
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
-          selectedYear={selectedYear}
-          onSelectYear={setSelectedYear}
-          yearOptions={[currentYear - 2, currentYear - 1, currentYear, currentYear + 1, currentYear + 2]}
         />
         <section className="px-4 pt-6 pb-8">
           {!showStandings && (
@@ -228,7 +211,7 @@ export function HomeFeed() {
           ) : loading ? (
             <p className="text-sm text-muted">Loading…</p>
           ) : matches.length === 0 ? (
-            <p className="text-sm text-muted">No games on this date for {selectedYear}.</p>
+            <p className="text-sm text-muted">No games on this date.</p>
           ) : (
             <div className="space-y-3">
               {matches.map((m) => (
