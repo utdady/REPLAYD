@@ -1,6 +1,6 @@
 # Sports section — future structure
 
-This document describes the intended hierarchy and components for each sport when implemented.
+This document describes the intended hierarchy and components for each sport. The **page structure** (chip rows + “Coming soon” content) is implemented in `components/feed/`: `f1-section.tsx`, `nba-section.tsx`, `nfl-section.tsx`. Real data and backend can be added later.
 
 ## Football
 

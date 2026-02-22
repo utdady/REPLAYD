@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { startOfDay, format } from "date-fns";
 import { CompChips } from "@/components/feed/comp-chips";
 import { SportChips, type SportId } from "@/components/feed/sport-chips";
+import { F1Section } from "@/components/feed/f1-section";
+import { NBASection } from "@/components/feed/nba-section";
+import { NFLSection } from "@/components/feed/nfl-section";
 import { DateStrip } from "@/components/feed/date-strip";
 import { ScrollRow } from "@/components/feed/scroll-row";
 import { MatchCard } from "@/components/match/match-card";
@@ -257,11 +260,11 @@ export function HomeFeed() {
         </ScrollRow>
           </>
         ) : (
-          <div className="px-4 pt-12 pb-8 text-center text-muted">
-            {activeSport === "f1" && "F1 — Coming soon"}
-            {activeSport === "nfl" && "NFL — Coming soon"}
-            {activeSport === "nba" && "NBA — Coming soon"}
-          </div>
+          <>
+            {activeSport === "f1" && <F1Section />}
+            {activeSport === "nba" && <NBASection />}
+            {activeSport === "nfl" && <NFLSection />}
+          </>
         )}
       </div>
     </div>
