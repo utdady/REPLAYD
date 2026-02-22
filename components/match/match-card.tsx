@@ -52,13 +52,13 @@ export function MatchCard({
                 <span className="text-[10px] font-mono uppercase tracking-wider text-muted">{season}</span>
               ) : null}
             </div>
-            {(dateLabel || time) && (
-              <p className="text-[10px] font-mono text-muted2 mt-1">
-                {[dateLabel, time].filter(Boolean).join(" · ")}
-              </p>
-            )}
           </div>
-          <MatchStatus live={isLive} minute={minute} time={time} className="shrink-0" />
+          <MatchStatus
+            live={isLive}
+            minute={minute}
+            time={[dateLabel, time].filter(Boolean).join(" · ") || time}
+            className="shrink-0"
+          />
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
           <div className="flex items-center gap-2 min-w-0">
