@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 // Routes that require authentication via middleware redirect.
 // /profile is handled by the page itself (client component with graceful fallback).
 const PROTECTED_ROUTES = ["/log", "/activity", "/users/me"];
-const AUTH_PAGES = ["/login", "/signup"];
+const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,6 +21,10 @@ export async function middleware(request: NextRequest) {
   }
 
   const isAuthPage = AUTH_PAGES.includes(pathname);
+  const rememberMe = request.cookies.get("_remember_me")?.value === "true";
+  const extendedAuthOptions = rememberMe
+    ? { maxAge: 60 * 60 * 24 * 365, expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }
+    : {};
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -32,9 +36,11 @@ export async function middleware(request: NextRequest) {
           request.cookies.set(name, value)
         );
         response = NextResponse.next({ request: { headers: request.headers } });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
+        cookiesToSet.forEach(({ name, value, options = {} }) => {
+          const isAuthCookie = name.startsWith("sb-") && name.includes("auth-token");
+          const finalOptions = rememberMe && isAuthCookie ? { ...options, ...extendedAuthOptions } : options;
+          response.cookies.set(name, value, finalOptions);
+        });
       },
     },
   });

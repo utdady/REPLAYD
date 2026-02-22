@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+  const rememberMe = request.cookies.get("_remember_me")?.value === "true";
+  const extendedAuthOptions = rememberMe
+    ? { maxAge: 60 * 60 * 24 * 365, expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }
+    : {};
+
   // Collect all cookies that Supabase wants to set during the exchange
   const cookiesToReturn: { name: string; value: string; options: Record<string, unknown> }[] = [];
 
@@ -41,7 +46,9 @@ export async function GET(request: NextRequest) {
       setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
         cookiesToSet.forEach(({ name, value, options = {} }) => {
           request.cookies.set(name, value);
-          cookiesToReturn.push({ name, value, options });
+          const isAuthCookie = name.startsWith("sb-") && name.includes("auth-token");
+          const finalOptions = rememberMe && isAuthCookie ? { ...options, ...extendedAuthOptions } : options;
+          cookiesToReturn.push({ name, value, options: finalOptions });
         });
       },
     },
@@ -63,6 +70,6 @@ export async function GET(request: NextRequest) {
     response.cookies.set(name, value, options);
   });
 
-  response.cookies.delete("_remember_me");
+  // Keep _remember_me for future session refreshes; only delete on sign-out
   return response;
 }

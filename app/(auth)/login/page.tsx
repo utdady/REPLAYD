@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { login, signInWithGoogle } from "@/app/(auth)/actions";
 
 export default function LoginPage() {
@@ -29,35 +30,33 @@ export default function LoginPage() {
         formData.append("rememberMe", rememberMe ? "true" : "false");
         startTransition(() => login(formData));
       }} className="space-y-4">
+        <FloatingLabelInput
+          id="identifier"
+          name="identifier"
+          type="text"
+          label="Email or Username"
+          autoComplete="username"
+          required
+          maxLength={255}
+          defaultValue={email || ""}
+        />
         <div>
-          <label htmlFor="identifier" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
-            Email or Username
-          </label>
-          <input
-            id="identifier"
-            type="text"
-            name="identifier"
-            autoComplete="username"
-            required
-            maxLength={255}
-            className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
-            placeholder="you@example.com or johndoe"
-            defaultValue={email || ""}
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
-            Password
-          </label>
-          <input
+          <FloatingLabelInput
             id="password"
-            type="password"
             name="password"
+            type="password"
+            label="Password"
             autoComplete="current-password"
             required
             maxLength={128}
-            className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
+            showPasswordToggle
           />
+          <Link
+            href="/forgot-password"
+            className="block text-xs text-muted hover:text-green mt-1.5 transition-colors"
+          >
+            Forgot your password?
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <input

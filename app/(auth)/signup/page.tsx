@@ -4,11 +4,15 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { signup, checkUsername, signInWithGoogle, resendConfirmation } from "@/app/(auth)/actions";
+import { getPasswordStrength } from "@/lib/password-strength";
 
 export default function SignupPage() {
   const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -24,10 +28,14 @@ export default function SignupPage() {
   const errorSuggestions = searchParams.get("suggestions");
   const errorEmail = searchParams.get("email");
 
+  const strength = getPasswordStrength(password);
+  const passwordsMatch = password === passwordConfirm;
+  const passwordMismatch = passwordConfirm.length > 0 && !passwordsMatch;
+
   const handleUsernameChange = (value: string) => {
     setUsername(value);
     const trimmed = value.trim();
-    
+
     if (trimmed.length === 0) {
       setUsernameStatus("idle");
       if (debounceTimer.current) {
@@ -46,12 +54,10 @@ export default function SignupPage() {
       return;
     }
 
-    // Clear previous timer
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
-    // Debounce the check
     debounceTimer.current = setTimeout(async () => {
       setUsernameStatus("checking");
       const result = await checkUsername(trimmed);
@@ -66,7 +72,6 @@ export default function SignupPage() {
   };
 
   useEffect(() => {
-    // Load suggestions from URL if present (from server redirect)
     if (errorUsername && errorSuggestions) {
       try {
         const parsed = JSON.parse(decodeURIComponent(errorSuggestions));
@@ -101,7 +106,7 @@ export default function SignupPage() {
                 Log in instead →
               </Link>
               {" · "}
-              <Link href={`/login?reset=true&email=${encodeURIComponent(errorEmail)}`} className="text-green hover:underline text-xs">
+              <Link href={`/forgot-password`} className="text-green hover:underline text-xs">
                 Reset password →
               </Link>
             </div>
@@ -115,13 +120,15 @@ export default function SignupPage() {
             Didn&apos;t receive it? Check your spam folder or resend below.
           </p>
           {!errorEmail && (
-            <input
+            <FloatingLabelInput
+              id="resend-email"
+              name="resend-email"
               type="email"
+              label="Enter your email"
               value={resendEmail}
               onChange={(e) => setResendEmail(e.target.value)}
-              placeholder="Enter your email"
               maxLength={255}
-              className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-xs font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green mb-2"
+              className="mb-2"
             />
           )}
           <button
@@ -150,22 +157,18 @@ export default function SignupPage() {
       )}
       <form action={(formData) => startTransition(() => signup(formData))} className="space-y-4">
         <div>
-          <label htmlFor="username" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
-            Username
-          </label>
-          <input
+          <FloatingLabelInput
             id="username"
-            type="text"
             name="username"
+            type="text"
+            label="Username"
+            value={username}
+            onChange={(e) => handleUsernameChange(e.target.value)}
             autoComplete="username"
             required
             minLength={3}
             maxLength={30}
             pattern="[a-zA-Z0-9_]{3,30}"
-            value={username}
-            onChange={(e) => handleUsernameChange(e.target.value)}
-            className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
-            placeholder="johndoe"
           />
           <div className="mt-1 min-h-[16px]">
             {usernameStatus === "checking" && (
@@ -207,39 +210,87 @@ export default function SignupPage() {
             )}
           </div>
         </div>
+        <FloatingLabelInput
+          id="email"
+          name="email"
+          type="email"
+          label="Email"
+          autoComplete="email"
+          required
+          maxLength={255}
+          defaultValue={errorEmail || ""}
+        />
         <div>
-          <label htmlFor="email" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            autoComplete="email"
-            required
-            maxLength={255}
-            className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
-            placeholder="you@example.com"
-            defaultValue={errorEmail || ""}
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="block text-xs font-mono uppercase tracking-wider text-muted mb-1">
-            Password
-          </label>
-          <input
+          <FloatingLabelInput
             id="password"
-            type="password"
             name="password"
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
             required
             minLength={8}
             maxLength={128}
-            className="w-full rounded-badge border border-border2 bg-surface3 px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
+            showPasswordToggle
           />
-          <p className="text-xs text-muted2 mt-1">At least 8 characters</p>
+          <div className="mt-1.5">
+            <div className="flex gap-0.5 h-1">
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={`flex-1 rounded-full transition-colors ${
+                    i < strength.score
+                      ? strength.score <= 1
+                        ? "bg-red"
+                        : strength.score <= 2
+                        ? "bg-amber-500"
+                        : strength.score <= 3
+                        ? "bg-yellow-500"
+                        : "bg-green"
+                      : "bg-surface3"
+                  }`}
+                />
+              ))}
+            </div>
+            {password.length > 0 && (
+              <p className="text-xs text-muted mt-0.5">{strength.label}</p>
+            )}
+            {password.length === 0 && (
+              <p className="text-xs text-muted2">At least 8 characters</p>
+            )}
+          </div>
         </div>
-        <Button type="submit" variant="primary" className="w-full" disabled={isPending || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking"}>
+        <div>
+          <FloatingLabelInput
+            id="passwordConfirm"
+            name="passwordConfirm"
+            type="password"
+            label="Confirm password"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            autoComplete="new-password"
+            required
+            minLength={8}
+            maxLength={128}
+            showPasswordToggle
+          />
+          {passwordMismatch && (
+            <p className="text-xs text-red mt-1">Passwords do not match</p>
+          )}
+        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          disabled={
+            isPending ||
+            usernameStatus === "taken" ||
+            usernameStatus === "invalid" ||
+            usernameStatus === "checking" ||
+            passwordMismatch
+          }
+        >
           {isPending ? "Signing up..." : "Sign up"}
         </Button>
       </form>

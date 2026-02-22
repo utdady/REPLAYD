@@ -16,7 +16,7 @@ export async function login(formData: FormData) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60,
+        maxAge: 60 * 60 * 24 * 365, // 1 year - persist for session refreshes
       });
     }
 
@@ -56,7 +56,7 @@ export async function login(formData: FormData) {
       redirect("/login?error=" + encodeURIComponent(error.message));
     }
 
-    cookieStore.delete("_remember_me");
+    // Keep _remember_me for session refreshes; only delete on sign-out
 
     revalidatePath("/", "layout");
     redirect("/");
@@ -142,7 +142,7 @@ export async function signInWithGoogle(formData?: FormData) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 5, // Expires in 5 minutes (enough for OAuth flow)
+      maxAge: 60 * 60 * 24 * 365, // 1 year - persist for session refreshes
     });
   }
 
@@ -184,10 +184,15 @@ export async function signup(formData: FormData) {
 
   const email = (formData.get("email") as string)?.trim().substring(0, 255);
   const password = (formData.get("password") as string)?.substring(0, 128);
+  const passwordConfirm = (formData.get("passwordConfirm") as string)?.substring(0, 128);
   const username = (formData.get("username") as string)?.trim().substring(0, 30);
 
   if (!email || !password || !username) {
     redirect("/signup?error=Please+fill+in+all+fields");
+  }
+
+  if (password !== passwordConfirm) {
+    redirect("/signup?error=Passwords+do+not+match");
   }
 
   if (password.length < 8) {
@@ -236,6 +241,37 @@ export async function signup(formData: FormData) {
   redirect(`/signup?message=Check+your+email+to+confirm+your+account&email=${encodeURIComponent(email)}`);
 }
 
+export async function resetPasswordRequest(email: string): Promise<{ success: boolean; error?: string }> {
+  if (!email || !email.trim()) return { success: false, error: "Email is required" };
+
+  const trimmed = email.trim().substring(0, 255);
+  const supabase = await createClient();
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+    "http://localhost:3001";
+
+  const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+    redirectTo: `${siteUrl}/reset-password`,
+  });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function updatePassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: newPassword.substring(0, 128) });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
 export async function resendConfirmation(email: string): Promise<{ success: boolean; error?: string }> {
   if (!email || !email.trim()) return { success: false, error: "Email is required" };
 
@@ -260,6 +296,8 @@ export async function resendConfirmation(email: string): Promise<{ success: bool
 }
 
 export async function signout() {
+  const cookieStore = await cookies();
+  cookieStore.delete("_remember_me");
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
