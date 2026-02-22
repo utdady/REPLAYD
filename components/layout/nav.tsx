@@ -30,16 +30,16 @@ export async function Nav() {
           </Link>
         ))}
       </div>
-      <div className="flex items-center gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap">
+      <div className="flex items-baseline gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap">
         {user ? (
           <>
-            <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors whitespace-nowrap">
+            <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors whitespace-nowrap leading-none">
               Profile
             </Link>
-            <form action={signout} className="inline-flex items-center">
+            <form action={signout} className="inline leading-none">
               <button
                 type="submit"
-                className="text-[.7rem] font-mono uppercase tracking-[.18em] font-bold text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 leading-none"
+                className="inline text-[.7rem] font-mono uppercase tracking-[.18em] font-bold text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 m-0 leading-none"
               >
                 Sign out
               </button>
