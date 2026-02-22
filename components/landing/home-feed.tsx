@@ -116,30 +116,36 @@ export function HomeFeed() {
           className="mt-4"
         />
         <section className="px-4 pt-6 pb-8">
-          <div className={`flex items-center justify-between ${isToday || showStandings ? "mb-4" : ""}`}>
-            {hasStandings ? (
-              showStandings ? (
+          {!showStandings && (
+            <div className={`flex items-center justify-between ${isToday ? "mb-4" : ""}`}>
+              <SectionEyebrow className="text-[1.75rem]">{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+              {hasStandings && (
+                <button
+                  onClick={() => setShowStandings(true)}
+                  className="min-w-[7rem] text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn transition-colors bg-surface2 text-muted border border-border2 hover:text-white shrink-0"
+                >
+                  Standings
+                </button>
+              )}
+            </div>
+          )}
+          {!(showStandings === false && isToday) && (
+            <div className="flex items-center justify-between mt-2 mb-4">
+              {showStandings ? (
                 <SectionEyebrow className="text-[1.75rem]">{CODE_TO_LABEL[activeComp] ?? activeComp}</SectionEyebrow>
               ) : (
-                <SectionEyebrow className="text-[1.75rem]">{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
-              )
-            ) : (
-              <SectionEyebrow className="text-[1.75rem]">{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
-            )}
-            {hasStandings && (
-              <button
-                onClick={() => setShowStandings((s) => !s)}
-                className={`min-w-[7rem] text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn transition-colors border shrink-0 ${showStandings ? "bg-green text-black border-transparent" : "bg-surface2 text-muted border-border2 hover:text-white"}`}
-              >
-                Standings
-              </button>
-            )}
-          </div>
-          {!showStandings && !isToday && (
-            <div className="mt-2 mb-4">
-              <h2 className="font-display text-3xl md:text-4xl tracking-wide" style={{ letterSpacing: "0.02em" }}>
-                GAMES
-              </h2>
+                <h2 className="font-display text-3xl md:text-4xl tracking-wide" style={{ letterSpacing: "0.02em" }}>
+                  GAMES
+                </h2>
+              )}
+              {showStandings && (
+                <button
+                  onClick={() => setShowStandings(false)}
+                  className="min-w-[7rem] text-[.7rem] font-semibold tracking-[.05em] uppercase font-mono px-3 py-1.5 h-7 rounded-btn border border-transparent bg-green text-black transition-colors shrink-0"
+                >
+                  Standings
+                </button>
+              )}
             </div>
           )}
 
