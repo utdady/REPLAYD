@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { addDays, format, isToday, startOfDay } from "date-fns";
 import { DatePickerPopover } from "@/components/feed/date-picker-popover";
 
@@ -12,8 +12,11 @@ export interface DateStripProps {
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const CELL_MIN_W = "min-w-[44px]";
+const CELL_HEIGHT = "h-10";
+
 const CalendarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
     <line x1="16" y1="2" x2="16" y2="6" />
     <line x1="8" y1="2" x2="8" y2="6" />
@@ -39,18 +42,20 @@ export function DateStrip({
     setCalendarOpen(null);
   };
 
+  const calendarBtnClass = `shrink-0 flex items-center justify-center ${CELL_MIN_W} ${CELL_HEIGHT} rounded-md text-muted hover:text-white hover:bg-surface3 transition-colors`;
+
   return (
-    <div className={`flex items-stretch gap-1 px-4 pb-2 ${className}`}>
-      <button
-        ref={leftBtnRef}
-        type="button"
-        onClick={() => setCalendarOpen((o) => (o === "left" ? null : "left"))}
-        className="shrink-0 flex items-center justify-center w-10 h-[52px] rounded-md text-muted hover:text-white hover:bg-surface3 transition-colors"
-        aria-label="Open calendar"
-      >
-        <CalendarIcon />
-      </button>
-      <div className="flex gap-0 flex-1 min-w-0 overflow-x-auto date-strip-scroll justify-center">
+    <div className={`px-4 pb-2 ${className}`}>
+      <div className="flex gap-0 min-w-0 overflow-x-auto date-strip-scroll">
+        <button
+          ref={leftBtnRef}
+          type="button"
+          onClick={() => setCalendarOpen((o) => (o === "left" ? null : "left"))}
+          className={calendarBtnClass}
+          aria-label="Open calendar"
+        >
+          <CalendarIcon />
+        </button>
         {days.map((d) => {
           const active = selectedDate.getTime() === d.getTime();
           const isTodayDate = isToday(d);
@@ -68,23 +73,23 @@ export function DateStrip({
               key={d.toISOString()}
               type="button"
               onClick={() => onSelectDate(d)}
-              className={`shrink-0 flex flex-col items-center py-2 px-3 rounded-md min-w-[52px] transition-colors ${btnClass}`}
+              className={`shrink-0 flex flex-col items-center justify-center py-1.5 px-2 rounded-md ${CELL_MIN_W} ${CELL_HEIGHT} transition-colors ${btnClass}`}
             >
-              <span className="text-[10px] font-mono uppercase tracking-wider">{DOW[d.getDay()]}</span>
-              <span className="text-sm font-mono font-medium">{format(d, "d")}</span>
+              <span className="text-[9px] font-mono uppercase tracking-wider leading-tight">{DOW[d.getDay()]}</span>
+              <span className="text-xs font-mono font-medium leading-tight">{format(d, "d")}</span>
             </button>
           );
         })}
+        <button
+          ref={rightBtnRef}
+          type="button"
+          onClick={() => setCalendarOpen((o) => (o === "right" ? null : "right"))}
+          className={calendarBtnClass}
+          aria-label="Open calendar"
+        >
+          <CalendarIcon />
+        </button>
       </div>
-      <button
-        ref={rightBtnRef}
-        type="button"
-        onClick={() => setCalendarOpen((o) => (o === "right" ? null : "right"))}
-        className="shrink-0 flex items-center justify-center w-10 h-[52px] rounded-md text-muted hover:text-white hover:bg-surface3 transition-colors"
-        aria-label="Open calendar"
-      >
-        <CalendarIcon />
-      </button>
       {calendarOpen && (
         <DatePickerPopover
           selectedDate={selectedDate}

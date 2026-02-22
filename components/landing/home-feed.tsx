@@ -113,6 +113,7 @@ export function HomeFeed() {
         <DateStrip
           selectedDate={selectedDate}
           onSelectDate={setSelectedDate}
+          className="mt-4"
         />
         <section className="px-4 pt-6 pb-8">
           {!showStandings && (
