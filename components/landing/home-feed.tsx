@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { startOfDay, format } from "date-fns";
 import { CompChips } from "@/components/feed/comp-chips";
+import { SportChips, type SportId } from "@/components/feed/sport-chips";
 import { DateStrip } from "@/components/feed/date-strip";
 import { ScrollRow } from "@/components/feed/scroll-row";
 import { MatchCard } from "@/components/match/match-card";
@@ -43,6 +44,7 @@ type StandingRow = Awaited<ReturnType<typeof getStandings>>[number];
 export function HomeFeed() {
   const today = startOfDay(new Date());
 
+  const [activeSport, setActiveSport] = useState<SportId>("football");
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeComp, setActiveComp] = useState("All");
   const [matches, setMatches] = useState<Awaited<ReturnType<typeof getMatchesForFeed>>>([]);
@@ -106,15 +108,24 @@ export function HomeFeed() {
     );
   };
 
+  const isFootball = activeSport === "football";
+
   return (
     <div className="pt-20 md:pt-24">
       <div className="max-w-2xl mx-auto">
-        <CompChips active={activeComp} onSelect={setActiveComp} />
-        <DateStrip
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
-          className="mt-4"
-        />
+        <SportChips active={activeSport} onSelect={setActiveSport} />
+        {isFootball && (
+          <>
+            <CompChips active={activeComp} onSelect={setActiveComp} className="mt-3" />
+            <DateStrip
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              className="mt-4"
+            />
+          </>
+        )}
+        {isFootball ? (
+          <>
         <section className="px-4 pt-6 pb-8">
           <div className={`flex items-center justify-between ${isToday || showStandings ? "mb-4" : ""}`}>
             {hasStandings ? (
@@ -244,6 +255,14 @@ export function HomeFeed() {
             <MatchPoster key={m.id} id={m.id} competition={m.competition} home={m.home} away={m.away} homeScore={m.homeScore} awayScore={m.awayScore} friend={m.friend} />
           ))}
         </ScrollRow>
+          </>
+        ) : (
+          <div className="px-4 pt-12 pb-8 text-center text-muted">
+            {activeSport === "f1" && "F1 — Coming soon"}
+            {activeSport === "nfl" && "NFL — Coming soon"}
+            {activeSport === "nba" && "NBA — Coming soon"}
+          </div>
+        )}
       </div>
     </div>
   );
