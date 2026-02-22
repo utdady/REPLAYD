@@ -119,12 +119,12 @@ export function HomeFeed() {
           <div className={`flex items-center justify-between ${isToday || showStandings ? "mb-4" : ""}`}>
             {hasStandings ? (
               showStandings ? (
-                <SectionEyebrow>{CODE_TO_LABEL[activeComp] ?? activeComp}</SectionEyebrow>
+                <SectionEyebrow className="text-[1.75rem]">{CODE_TO_LABEL[activeComp] ?? activeComp}</SectionEyebrow>
               ) : (
-                <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+                <SectionEyebrow className="text-[1.75rem]">{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
               )
             ) : (
-              <SectionEyebrow>{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
+              <SectionEyebrow className="text-[1.75rem]">{isToday ? "Today" : format(selectedDate, "EEE d MMM")}</SectionEyebrow>
             )}
             {hasStandings && (
               <button
