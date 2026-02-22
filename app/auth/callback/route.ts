@@ -4,7 +4,13 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
+  const nextFromUrl = searchParams.get("next");
+  const nextFromCookie = request.cookies.get("_auth_next")?.value;
+  const rawNext = nextFromUrl ?? nextFromCookie ?? "/";
+  const next = rawNext.startsWith("/") && !rawNext.includes("//") && !AUTH_PAGES.includes(rawNext)
+    ? rawNext
+    : "/";
   const error = searchParams.get("error");
   const errorDescription = searchParams.get("error_description");
 
@@ -16,6 +22,7 @@ export async function GET(request: NextRequest) {
       `${origin}/login?error=${encodeURIComponent(errorMsg)}`
     );
     res.cookies.delete("_remember_me");
+    res.cookies.delete("_auth_next");
     return res;
   }
 
@@ -24,6 +31,7 @@ export async function GET(request: NextRequest) {
       `${origin}/login?error=${encodeURIComponent("No confirmation code provided")}`
     );
     res.cookies.delete("_remember_me");
+    res.cookies.delete("_auth_next");
     return res;
   }
 
@@ -64,6 +72,9 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(redirectUrl);
+
+  // Clear the temporary next cookie
+  response.cookies.delete("_auth_next");
 
   // Apply all collected auth cookies to the response
   cookiesToReturn.forEach(({ name, value, options }) => {

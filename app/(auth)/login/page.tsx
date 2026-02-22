@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const error = searchParams.get("error");
   const email = searchParams.get("email");
+  const next = searchParams.get("next");
 
   return (
     <div className="bg-surface border border-border rounded-card p-8">
@@ -28,6 +29,7 @@ export default function LoginPage() {
       )}
       <form action={(formData) => {
         formData.append("rememberMe", rememberMe ? "true" : "false");
+        if (next) formData.append("next", next);
         startTransition(() => login(formData));
       }} className="space-y-4">
         <FloatingLabelInput
@@ -77,6 +79,7 @@ export default function LoginPage() {
       <div className="mt-4 pt-4 border-t border-border">
         <form action={(formData) => {
           formData.append("rememberMe", rememberMe ? "true" : "false");
+          if (next) formData.append("next", next);
           startGoogleTransition(() => signInWithGoogle(formData));
         }}>
           <Button

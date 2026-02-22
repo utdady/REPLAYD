@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
 
+const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
+
 export async function login(formData: FormData) {
   try {
     const cookieStore = await cookies();
@@ -58,8 +60,13 @@ export async function login(formData: FormData) {
 
     // Keep _remember_me for session refreshes; only delete on sign-out
 
+    const nextPath = (formData.get("next") as string)?.trim();
+    const safeNext = nextPath && nextPath.startsWith("/") && !nextPath.includes("//") && !AUTH_PAGES.includes(nextPath)
+      ? nextPath
+      : "/";
+
     revalidatePath("/", "layout");
-    redirect("/");
+    redirect(safeNext);
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e && typeof (e as { digest?: string }).digest === "string") {
       throw e;
@@ -134,9 +141,21 @@ export async function checkUsername(username: string): Promise<{ available: bool
 export async function signInWithGoogle(formData?: FormData) {
   const cookieStore = await cookies();
   const rememberMe = formData?.get("rememberMe") === "true";
-  
+  const nextPath = (formData?.get("next") as string)?.trim();
+  const safeNext = nextPath && nextPath.startsWith("/") && !nextPath.includes("//") && !AUTH_PAGES.includes(nextPath)
+    ? nextPath
+    : "/";
+
+  // Store next path for redirect after OAuth callback
+  cookieStore.set("_auth_next", safeNext, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 5,
+    path: "/",
+  });
+
   // Store rememberMe preference in a temporary cookie before OAuth redirect
-  // This will be read by the server client to set appropriate cookie expiration
   if (rememberMe) {
     cookieStore.set("_remember_me", "true", {
       httpOnly: true,

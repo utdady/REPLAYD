@@ -1,9 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Routes that require authentication via middleware redirect.
-// /profile is handled by the page itself (client component with graceful fallback).
-const PROTECTED_ROUTES = ["/log", "/activity", "/users/me"];
+// Only these routes are public; all others require login.
 const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export async function middleware(request: NextRequest) {
@@ -48,15 +46,17 @@ export async function middleware(request: NextRequest) {
   // Always call getUser to refresh the session token if needed
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (isAuthPage) {
+  // Public: home page and auth pages
+  const isPublic = pathname === "/" || isAuthPage;
+  if (isPublic) {
     return response;
   }
 
-  // Protected routes: require login
-  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
-  if (isProtected && !user) {
+  // Require login for all other routes
+  if (!user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "Please+log+in+to+continue");
+    loginUrl.searchParams.set("next", pathname);
     const redirectRes = NextResponse.redirect(loginUrl);
     response.cookies.getAll().forEach((cookie) => {
       const { name, value, ...opts } = cookie;
