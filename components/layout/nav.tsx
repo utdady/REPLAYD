@@ -36,10 +36,13 @@ export async function Nav() {
             <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors">
               Profile
             </Link>
-            <form action={signout}>
-              <Button type="submit" variant="ghost" className="text-[.7rem]">
+            <form action={signout} className="inline">
+              <button
+                type="submit"
+                className="text-[.7rem] font-mono uppercase tracking-[.18em] font-bold text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0"
+              >
                 Sign out
-              </Button>
+              </button>
             </form>
           </>
         ) : (
