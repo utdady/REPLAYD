@@ -30,16 +30,16 @@ export async function Nav() {
           </Link>
         ))}
       </div>
-      <div className="flex items-center gap-4 shrink-0 ml-auto md:ml-0">
+      <div className="flex items-center gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap">
         {user ? (
           <>
-            <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors">
+            <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors whitespace-nowrap">
               Profile
             </Link>
-            <form action={signout} className="inline">
+            <form action={signout} className="inline-flex items-center">
               <button
                 type="submit"
-                className="text-[.7rem] font-mono uppercase tracking-[.18em] font-bold text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0"
+                className="text-[.7rem] font-mono uppercase tracking-[.18em] font-bold text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 leading-none"
               >
                 Sign out
               </button>
@@ -47,7 +47,7 @@ export async function Nav() {
           </>
         ) : (
           <>
-            <Link href="/login" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors">
+            <Link href="/login" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors whitespace-nowrap">
               Log in
             </Link>
             <Link href="/signup">
