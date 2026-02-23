@@ -9,9 +9,11 @@ export interface MatchRatingsBoxProps {
   totalCount: number;
   matchId: string;
   onLogClick?: () => void;
+  showLogCta?: boolean;
+  avatarUrl?: string | null;
 }
 
-export function MatchRatingsBox({ distribution, average, totalCount, matchId, onLogClick }: MatchRatingsBoxProps) {
+export function MatchRatingsBox({ distribution, average, totalCount, matchId, onLogClick, showLogCta = true, avatarUrl }: MatchRatingsBoxProps) {
   const maxCount = Math.max(1, ...Object.values(distribution));
 
   return (
@@ -45,13 +47,17 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
           <StarRating value={average} size="sm" readonly />
         </div>
       )}
-      {onLogClick ? (
+      {showLogCta && (onLogClick ? (
         <button
           type="button"
           onClick={onLogClick}
           className="flex w-full items-center gap-3 p-3 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors text-left"
         >
-          <span className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center" aria-hidden />
+          <span
+            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center"
+            style={{ backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined }}
+            aria-hidden
+          />
           <span className="text-sm text-muted flex-1">Rate, log, review, add to list + more</span>
           <span className="text-muted" aria-hidden>⋯</span>
         </button>
@@ -60,11 +66,15 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
           href={`/matches/${matchId}/log`}
           className="flex items-center gap-3 p-3 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors"
         >
-          <span className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center" aria-hidden />
+          <span
+            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center"
+            style={{ backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined }}
+            aria-hidden
+          />
           <span className="text-sm text-muted flex-1">Rate, log, review, add to list + more</span>
           <span className="text-muted" aria-hidden>⋯</span>
         </Link>
-      )}
+      ))}
     </section>
   );
 }

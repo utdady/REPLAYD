@@ -143,6 +143,15 @@ CREATE TABLE IF NOT EXISTS match_logs (
   UNIQUE(user_id, match_id)                     -- one log per match per user
 );
 
+-- Likes on match logs (for community logs sort by likes)
+CREATE TABLE IF NOT EXISTS log_likes (
+  user_id   UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  log_id    UUID NOT NULL REFERENCES match_logs(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, log_id)
+);
+CREATE INDEX IF NOT EXISTS idx_log_likes_log ON log_likes(log_id);
+
 CREATE TABLE IF NOT EXISTS lists (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -201,6 +210,7 @@ CREATE INDEX IF NOT EXISTS idx_follows_following      ON follows(following_id);
 
 ALTER TABLE profiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_logs   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE log_likes    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lists        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE list_items   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE follows      ENABLE ROW LEVEL SECURITY;
@@ -216,6 +226,11 @@ CREATE POLICY "logs_select_all"      ON match_logs FOR SELECT USING (true);
 CREATE POLICY "logs_insert_own"      ON match_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "logs_update_own"      ON match_logs FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "logs_delete_own"      ON match_logs FOR DELETE USING (auth.uid() = user_id);
+
+-- Log likes: public read, own write
+CREATE POLICY "log_likes_select_all" ON log_likes FOR SELECT USING (true);
+CREATE POLICY "log_likes_insert_own" ON log_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "log_likes_delete_own"  ON log_likes FOR DELETE USING (auth.uid() = user_id);
 
 -- Lists: public lists readable by all, private by owner only
 CREATE POLICY "lists_select_public"  ON lists FOR SELECT USING (is_public = true OR auth.uid() = user_id);

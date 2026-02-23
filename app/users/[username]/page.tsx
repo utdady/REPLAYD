@@ -12,6 +12,8 @@ import {
   unfollowUser,
 } from "@/app/actions/social";
 import { getMyProfile } from "@/app/actions/profile";
+import { getPublicListsByUserId } from "@/app/actions/list";
+import type { ListSummary } from "@/app/actions/list";
 
 type Profile = {
   id: string;
@@ -66,6 +68,7 @@ export default function UserProfilePage() {
   const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
   const [listUsers, setListUsers] = useState<FollowUser[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  const [publicLists, setPublicLists] = useState<ListSummary[]>([]);
 
   useEffect(() => {
     if (!username) return;
@@ -93,6 +96,9 @@ export default function UserProfilePage() {
       const counts = await getFollowCounts(userProfile.id);
       setFollowers(counts.followers);
       setFollowing(counts.following);
+
+      const lists = await getPublicListsByUserId(userProfile.id);
+      setPublicLists(lists);
 
       if (myProfile) {
         const followersList = await getFollowersList(userProfile.id);
@@ -368,6 +374,30 @@ export default function UserProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* ── LISTS ────────────────────────────────────────── */}
+        {publicLists.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted mb-4">Lists</h2>
+            <div className="space-y-3">
+              {publicLists.map((list) => (
+                <Link
+                  key={list.id}
+                  href={`/lists/${list.id}`}
+                  className="block p-4 rounded-card bg-surface border border-border hover:border-border2 transition-colors"
+                >
+                  <h3 className="font-medium text-white">{list.title}</h3>
+                  {list.description && (
+                    <p className="text-sm text-muted mt-1 line-clamp-2">{list.description}</p>
+                  )}
+                  <p className="text-xs font-mono text-muted mt-2">
+                    {list.item_count} item{list.item_count !== 1 ? "s" : ""}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
       </div>
     </div>

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMatchLog } from "@/app/actions/match";
-import { RatingDial } from "@/components/ui/rating-dial";
+import { StarRating } from "@/components/ui/star-rating";
+import { ReviewCharDial } from "@/components/ui/review-char-dial";
 import { Button } from "@/components/ui/button";
 
 export function LogMatchForm({ matchId, matchIdStr }: { matchId: number; matchIdStr: string }) {
@@ -40,21 +41,24 @@ export function LogMatchForm({ matchId, matchIdStr }: { matchId: number; matchId
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-muted mb-2">Rating (optional)</label>
-        <RatingDial value={rating} onChange={setRating} size={100} />
+        <StarRating value={rating} onChange={setRating} size="lg" />
       </div>
       <div>
         <label htmlFor="review" className="block text-sm font-medium text-muted mb-2">
           Review (optional, max 280 characters)
         </label>
-        <textarea
-          id="review"
-          value={review}
-          onChange={(e) => setReview(e.target.value.slice(0, 280))}
-          maxLength={280}
-          rows={4}
-          className="w-full px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
-          placeholder="What did you think?"
-        />
+        <div className="flex items-start gap-3">
+          <textarea
+            id="review"
+            value={review}
+            onChange={(e) => setReview(e.target.value.slice(0, 280))}
+            maxLength={280}
+            rows={4}
+            className="flex-1 min-w-0 px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
+            placeholder="What did you think?"
+          />
+          <ReviewCharDial value={review.length} size={44} className="shrink-0 mt-1" />
+        </div>
         <p className="text-xs font-mono text-muted mt-1 text-right">{review.length}/280</p>
       </div>
       <div>

@@ -9,6 +9,7 @@ export interface LogFeedItemProps {
   matchTitle: string;
   matchId: string;
   logId: string;
+  likeCount?: number;
 }
 
 export function LogFeedItem({
@@ -19,6 +20,7 @@ export function LogFeedItem({
   matchTitle,
   matchId,
   logId,
+  likeCount = 0,
 }: LogFeedItemProps) {
   return (
     <article className="flex gap-3 p-3 rounded-card bg-surface2 border border-border">
@@ -47,6 +49,9 @@ export function LogFeedItem({
         >
           {matchTitle}
         </Link>
+        {likeCount > 0 && (
+          <p className="text-xs font-mono text-muted mt-1">{likeCount} like{likeCount !== 1 ? "s" : ""}</p>
+        )}
       </div>
     </article>
   );

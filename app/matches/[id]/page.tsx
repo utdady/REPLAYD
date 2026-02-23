@@ -2,9 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { getMatchById, getLogsForMatch, getMatchRatingStats } from "@/app/actions/match";
+import { getMyProfile } from "@/app/actions/profile";
 import { MatchScore } from "@/components/match/match-score";
-import { LogFeedItem } from "@/components/feed/log-feed-item";
 import { MatchLogSheet } from "@/components/match/match-log-sheet";
+import { CommunityLogsSection } from "@/components/match/community-logs-section";
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -36,20 +37,24 @@ export default async function MatchDetailPage({
   const match = await getMatchById(id);
   if (!match) notFound();
 
+  const currentUser = await getMyProfile();
+  const currentUserAvatarUrl = currentUser?.avatar_url ?? null;
+  const currentUserId = currentUser?.id ?? null;
+
   const [logs, ratingStats] = await Promise.all([
-    getLogsForMatch(id),
+    getLogsForMatch(id, { currentUserId }),
     getMatchRatingStats(id),
   ]);
 
   const matchTitle = `${match.home_team_name} vs ${match.away_team_name}`;
   const matchDate = new Date(match.utc_date);
-  const roundLabel = match.matchday != null ? `Round ${match.matchday}` : match.stage ?? "";
   const started = match.home_score != null && match.away_score != null && match.status === "FINISHED";
+  const matchFinished = match.status === "FINISHED";
 
   return (
     <div className="pt-20 md:pt-24 min-h-screen">
       <div className="max-w-2xl mx-auto px-4 pb-24">
-        {/* Top bar: back, competition + round, Follow */}
+        {/* Top bar: back, competition name */}
         <header className="flex items-center justify-between gap-4 py-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2 text-sm font-mono text-muted hover:text-white shrink-0">
             <span aria-hidden>←</span>
@@ -61,15 +66,9 @@ export default async function MatchDetailPage({
             ) : null}
             <span className="text-sm font-mono text-white truncate">
               {match.competition_name}
-              {roundLabel ? ` ${roundLabel}` : ""}
             </span>
           </div>
-          <button
-            type="button"
-            className="shrink-0 text-xs font-mono uppercase tracking-wider px-3 py-1.5 rounded-pill bg-surface2 text-muted border border-border hover:text-white"
-          >
-            Follow
-          </button>
+          <div className="w-16 shrink-0" />
         </header>
 
         {/* Match info row */}
@@ -137,7 +136,7 @@ export default async function MatchDetailPage({
             href="#"
             className="inline-flex items-center gap-2 text-sm font-mono text-green hover:underline"
           >
-            Watch match / Highlights
+            Watch game highlights
           </Link>
         </section>
 
@@ -149,28 +148,15 @@ export default async function MatchDetailPage({
           distribution={ratingStats.distribution}
           average={ratingStats.average}
           totalCount={ratingStats.totalCount}
+          matchFinished={matchFinished}
+          currentUserAvatarUrl={currentUserAvatarUrl}
         >
-          <section className="py-6">
-            <h3 className="text-sm font-semibold mb-4">Community logs</h3>
-            <div className="space-y-3">
-              {logs.length === 0 ? (
-                <p className="text-sm text-muted">No logs yet. Be the first to log this game.</p>
-              ) : (
-                logs.map((log) => (
-                  <LogFeedItem
-                    key={log.id}
-                    username={log.username}
-                    avatarUrl={log.avatar_url}
-                    rating={log.rating}
-                    reviewSnippet={log.review ? log.review.slice(0, 100) : null}
-                    matchTitle={matchTitle}
-                    matchId={id}
-                    logId={log.id}
-                  />
-                ))
-              )}
-            </div>
-          </section>
+          <CommunityLogsSection
+            initialLogs={logs}
+            matchId={id}
+            matchTitle={matchTitle}
+            currentUserId={currentUserId}
+          />
         </MatchLogSheet>
       </div>
     </div>

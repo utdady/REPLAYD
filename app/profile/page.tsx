@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getMyProfile, getProfileStats } from "@/app/actions/profile";
 import { getFollowCounts, getFollowersList, getFollowingList } from "@/app/actions/social";
+import { getListsForCurrentUser } from "@/app/actions/list";
+import type { ListSummary } from "@/app/actions/list";
 
 type Profile = {
   id: string;
@@ -61,6 +63,7 @@ export default function ProfilePage() {
   const [listModal, setListModal] = useState<"followers" | "following" | null>(null);
   const [listUsers, setListUsers] = useState<FollowUser[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  const [lists, setLists] = useState<ListSummary[]>([]);
 
   useEffect(() => {
     Promise.all([getMyProfile(), getProfileStats()])
@@ -71,6 +74,8 @@ export default function ProfilePage() {
           const counts = await getFollowCounts(p.id);
           setFollowers(counts.followers);
           setFollowing(counts.following);
+          const userLists = await getListsForCurrentUser();
+          setLists(userLists);
         }
       })
       .catch((err) => {
@@ -385,7 +390,29 @@ export default function ProfilePage() {
         <div className="py-8 text-center text-muted text-[.85rem]">
           {activeTab === "games" && "Recent game logs will appear here..."}
           {activeTab === "reviews" && "Your reviews will appear here..."}
-          {activeTab === "lists" && "Your lists will appear here..."}
+          {activeTab === "lists" && (
+            lists.length === 0 ? (
+              "Your lists will appear here..."
+            ) : (
+              <div className="text-left space-y-3">
+                {lists.map((list) => (
+                  <Link
+                    key={list.id}
+                    href={`/lists/${list.id}`}
+                    className="block p-4 rounded-card bg-surface border border-border hover:border-border2 transition-colors"
+                  >
+                    <h3 className="font-medium text-white">{list.title}</h3>
+                    {list.description && (
+                      <p className="text-sm text-muted mt-1 line-clamp-2">{list.description}</p>
+                    )}
+                    <p className="text-xs font-mono text-muted mt-2">
+                      {list.item_count} item{list.item_count !== 1 ? "s" : ""}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            )
+          )}
         </div>
 
       </div>

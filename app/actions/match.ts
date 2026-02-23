@@ -66,14 +66,40 @@ export interface LogForMatchRow {
   rating: number | null;
   review: string | null;
   created_at: string;
+  like_count: number;
   [key: string]: unknown;
 }
 
-export async function getLogsForMatch(matchId: string): Promise<LogForMatchRow[]> {
+export type LogsSortBy = "likes" | "recency";
+
+export interface GetLogsForMatchOptions {
+  sortBy?: LogsSortBy;
+  filterByFriends?: boolean;
+  currentUserId?: string | null;
+}
+
+export async function getLogsForMatch(
+  matchId: string,
+  options?: GetLogsForMatchOptions
+): Promise<LogForMatchRow[]> {
   const mid = parseInt(matchId, 10);
   if (Number.isNaN(mid)) return [];
 
+  const sortBy = options?.sortBy ?? "likes";
+  const filterByFriends = options?.filterByFriends ?? false;
+  const currentUserId = options?.currentUserId ?? null;
+
+  const orderClause =
+    sortBy === "likes"
+      ? "ORDER BY COALESCE(lc.cnt, 0) DESC, ml.created_at DESC"
+      : "ORDER BY ml.created_at DESC";
+
   const sql = `
+    WITH like_counts AS (
+      SELECT log_id, COUNT(*)::int AS cnt
+      FROM log_likes
+      GROUP BY log_id
+    )
     SELECT
       ml.id::text,
       ml.user_id::text,
@@ -81,14 +107,24 @@ export async function getLogsForMatch(matchId: string): Promise<LogForMatchRow[]
       p.avatar_url,
       ml.rating::float,
       ml.review,
-      ml.created_at::text
+      ml.created_at::text,
+      COALESCE(lc.cnt, 0)::int AS like_count
     FROM match_logs ml
     JOIN profiles p ON p.id = ml.user_id
+    LEFT JOIN like_counts lc ON lc.log_id = ml.id
     WHERE ml.match_id = $1
-    ORDER BY ml.created_at DESC
+      AND (
+        NOT $3::boolean
+        OR EXISTS (SELECT 1 FROM follows f WHERE f.follower_id = $2 AND f.following_id = ml.user_id)
+      )
+    ${orderClause}
   `;
-  const { rows } = await query<LogForMatchRow>(sql, [mid]);
-  return rows;
+  const { rows } = await query<LogForMatchRow & { like_count: number }>(sql, [
+    mid,
+    currentUserId ?? null,
+    filterByFriends && currentUserId != null,
+  ]);
+  return rows.map((r) => ({ ...r, like_count: r.like_count ?? 0 }));
 }
 
 export interface MatchRatingStats {
@@ -174,5 +210,25 @@ export async function createMatchLog(
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to save log";
     return { ok: false, error: message };
+  }
+}
+
+export async function toggleLogLike(logId: string): Promise<{ ok: true; liked: boolean } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You must be signed in to like." };
+
+  const checkSql = "SELECT 1 FROM log_likes WHERE user_id = $1 AND log_id = $2";
+  const { rows: existing } = await query<Record<string, unknown>>(checkSql, [user.id, logId]);
+  const alreadyLiked = existing.length > 0;
+
+  if (alreadyLiked) {
+    await query("DELETE FROM log_likes WHERE user_id = $1 AND log_id = $2", [user.id, logId]);
+    return { ok: true, liked: false };
+  } else {
+    await query("INSERT INTO log_likes (user_id, log_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, logId]);
+    return { ok: true, liked: true };
   }
 }

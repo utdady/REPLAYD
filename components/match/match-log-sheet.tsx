@@ -3,8 +3,15 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { createMatchLog } from "@/app/actions/match";
+import {
+  getListsForCurrentUser,
+  createList,
+  addMatchToList,
+} from "@/app/actions/list";
+import type { ListSummary } from "@/app/actions/list";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
-import { RatingDial } from "@/components/ui/rating-dial";
+import { StarRating } from "@/components/ui/star-rating";
+import { ReviewCharDial } from "@/components/ui/review-char-dial";
 import { Button } from "@/components/ui/button";
 import { MatchRatingsBox } from "@/components/match/match-ratings-box";
 
@@ -15,6 +22,8 @@ export interface MatchLogSheetProps {
   distribution: Record<number, number>;
   average: number | null;
   totalCount: number;
+  matchFinished: boolean;
+  currentUserAvatarUrl?: string | null;
   children: React.ReactNode;
 }
 
@@ -25,6 +34,8 @@ export function MatchLogSheet({
   distribution,
   average,
   totalCount,
+  matchFinished,
+  currentUserAvatarUrl,
   children,
 }: MatchLogSheetProps) {
   const router = useRouter();
@@ -36,6 +47,65 @@ export function MatchLogSheet({
   const [containsSpoilers, setContainsSpoilers] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+
+  const [lists, setLists] = React.useState<ListSummary[]>([]);
+  const [listsLoading, setListsLoading] = React.useState(false);
+  const [selectedListId, setSelectedListId] = React.useState<string>("");
+  const [addToListError, setAddToListError] = React.useState<string | null>(null);
+  const [addToListSuccess, setAddToListSuccess] = React.useState(false);
+  const [showCreateList, setShowCreateList] = React.useState(false);
+  const [newListTitle, setNewListTitle] = React.useState("");
+  const [newListDescription, setNewListDescription] = React.useState("");
+  const [creatingList, setCreatingList] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setListsLoading(true);
+      getListsForCurrentUser()
+        .then(setLists)
+        .finally(() => setListsLoading(false));
+      setAddToListError(null);
+      setAddToListSuccess(false);
+    }
+  }, [open]);
+
+  const handleAddToList = async () => {
+    if (!selectedListId) return;
+    setAddToListError(null);
+    const result = await addMatchToList(selectedListId, matchId);
+    if (result.ok) {
+      setAddToListSuccess(true);
+      router.refresh();
+    } else {
+      setAddToListError(result.error);
+    }
+  };
+
+  const handleCreateListAndAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newListTitle.trim();
+    if (!title) return;
+    setCreatingList(true);
+    setAddToListError(null);
+    const created = await createList(title, newListDescription.trim() || undefined);
+    if (!created.ok) {
+      setAddToListError(created.error);
+      setCreatingList(false);
+      return;
+    }
+    const added = await addMatchToList(created.listId, matchId);
+    setCreatingList(false);
+    if (added.ok) {
+      setShowCreateList(false);
+      setNewListTitle("");
+      setNewListDescription("");
+      setLists((prev) => [...prev, { id: created.listId, title, description: newListDescription.trim() || null, is_ranked: false, item_count: 1 }]);
+      setAddToListSuccess(true);
+      router.refresh();
+    } else {
+      setAddToListError(added.error);
+    }
+  };
 
   const openSheet = React.useCallback(() => setOpen(true), []);
   const closeSheet = React.useCallback(() => {
@@ -70,33 +140,40 @@ export function MatchLogSheet({
         average={average}
         totalCount={totalCount}
         matchId={matchIdStr}
-        onLogClick={openSheet}
+        onLogClick={matchFinished ? openSheet : undefined}
+        showLogCta={matchFinished}
+        avatarUrl={currentUserAvatarUrl}
       />
       {children}
-      <div className="fixed bottom-20 md:bottom-6 left-0 right-0 max-w-2xl mx-auto px-4 z-40">
-        <Button variant="primary" className="w-full py-3" onClick={openSheet}>
-          Log this game
-        </Button>
-      </div>
+      {matchFinished && (
+        <div className="fixed bottom-20 md:bottom-6 left-0 right-0 max-w-2xl mx-auto px-4 z-40">
+          <Button variant="primary" className="w-full py-3" onClick={openSheet}>
+            Log this game
+          </Button>
+        </div>
+      )}
       <BottomSheet open={open} onClose={closeSheet} title={matchTitle}>
         <form onSubmit={handleSubmit} className="space-y-5 pb-6">
           <div>
             <label className="block text-sm font-medium text-muted mb-2">Rating (optional)</label>
-            <RatingDial value={rating} onChange={setRating} size={100} />
+            <StarRating value={rating} onChange={setRating} size="lg" />
           </div>
           <div>
             <label htmlFor="sheet-review" className="block text-sm font-medium text-muted mb-2">
               Review (optional, max 280 characters)
             </label>
-            <textarea
-              id="sheet-review"
-              value={review}
-              onChange={(e) => setReview(e.target.value.slice(0, 280))}
-              maxLength={280}
-              rows={3}
-              className="w-full px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
-              placeholder="What did you think?"
-            />
+            <div className="flex items-start gap-3">
+              <textarea
+                id="sheet-review"
+                value={review}
+                onChange={(e) => setReview(e.target.value.slice(0, 280))}
+                maxLength={280}
+                rows={3}
+                className="flex-1 min-w-0 px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
+                placeholder="What did you think?"
+              />
+              <ReviewCharDial value={review.length} size={44} className="shrink-0 mt-1" />
+            </div>
             <p className="text-xs font-mono text-muted mt-1 text-right">{review.length}/280</p>
           </div>
           <div>
@@ -131,6 +208,83 @@ export function MatchLogSheet({
               <span className="text-sm text-muted">Review contains spoilers</span>
             </label>
           </div>
+
+          <div className="border-t border-border pt-4">
+            <h4 className="text-sm font-medium text-muted mb-2">Add to list</h4>
+            {listsLoading ? (
+              <p className="text-xs text-muted">Loading lists…</p>
+            ) : showCreateList ? (
+              <form onSubmit={handleCreateListAndAdd} className="space-y-2">
+                <input
+                  type="text"
+                  value={newListTitle}
+                  onChange={(e) => setNewListTitle(e.target.value)}
+                  placeholder="List name"
+                  className="w-full px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2 text-sm"
+                />
+                <input
+                  type="text"
+                  value={newListDescription}
+                  onChange={(e) => setNewListDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="w-full px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2 text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button type="submit" variant="primary" disabled={creatingList || !newListTitle.trim()}>
+                    {creatingList ? "Creating…" : "Create and add"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateList(false)}
+                    className="px-3 py-1.5 text-sm text-muted hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : lists.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setShowCreateList(true)}
+                className="text-sm text-green hover:underline"
+              >
+                Create a list and add this match
+              </button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={selectedListId}
+                  onChange={(e) => setSelectedListId(e.target.value)}
+                  className="flex-1 min-w-0 px-3 py-2 rounded-btn bg-surface2 border border-border text-white text-sm focus:outline-none focus:border-border2"
+                >
+                  <option value="">Choose a list</option>
+                  {lists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      {list.title}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleAddToList}
+                  disabled={!selectedListId}
+                >
+                  Add
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateList(true)}
+                  className="text-xs text-muted hover:text-white"
+                >
+                  + New list
+                </button>
+              </div>
+            )}
+            {addToListError && <p className="text-xs text-red mt-1">{addToListError}</p>}
+            {addToListSuccess && <p className="text-xs text-green mt-1">Added to list.</p>}
+          </div>
+
           {error && <p className="text-sm text-red">{error}</p>}
           <Button type="submit" variant="primary" className="w-full py-3" disabled={submitting}>
             {submitting ? "Saving…" : "Done"}
