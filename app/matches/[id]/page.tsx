@@ -1,35 +1,32 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { getMatchById, getLogsForMatch, getMatchRatingStats } from "@/app/actions/match";
 import { MatchScore } from "@/components/match/match-score";
 import { Button } from "@/components/ui/button";
 import { LogFeedItem } from "@/components/feed/log-feed-item";
+import { MatchRatingsBox } from "@/components/match/match-ratings-box";
 
-// Placeholder — replace with DB lookup by id
-async function getMatch(id: string) {
-  if (!id) return null;
-  return {
-    id,
-    competition: "EPL",
-    home: { id: "t1", name: "Arsenal", crest: "🔴" },
-    away: { id: "t2", name: "Chelsea", crest: "🔵" },
-    homeScore: 2,
-    awayScore: 1,
-    date: "2025-02-15T15:00:00Z",
-  };
+function statusLabel(status: string): string {
+  switch (status) {
+    case "FINISHED":
+      return "Full time";
+    case "IN_PLAY":
+    case "PAUSED":
+      return "Live";
+    case "SCHEDULED":
+    case "TIMED":
+      return "Scheduled";
+    case "POSTPONED":
+      return "Postponed";
+    case "SUSPENDED":
+      return "Suspended";
+    case "CANCELLED":
+      return "Cancelled";
+    default:
+      return status;
+  }
 }
-
-async function getLogs(_matchId: string) {
-  return [
-    { id: "log1", username: "footy_fan", avatarUrl: null, rating: 4.5, reviewSnippet: "Great game, Saka was on fire.", matchId: "m1", logId: "log1" },
-  ];
-}
-
-const TABS = [
-  { slug: "overview", label: "Overview" },
-  { slug: "logs", label: "Logs" },
-  { slug: "reviews", label: "Reviews" },
-];
 
 export default async function MatchDetailPage({
   params,
@@ -37,46 +34,121 @@ export default async function MatchDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const match = await getMatch(id);
+  const match = await getMatchById(id);
   if (!match) notFound();
 
-  const logs = await getLogs(id);
-  const matchTitle = `${match.home.name} vs ${match.away.name}`;
+  const [logs, ratingStats] = await Promise.all([
+    getLogsForMatch(id),
+    getMatchRatingStats(id),
+  ]);
+
+  const matchTitle = `${match.home_team_name} vs ${match.away_team_name}`;
+  const matchDate = new Date(match.utc_date);
+  const roundLabel = match.matchday != null ? `Round ${match.matchday}` : match.stage ?? "";
+  const started = match.home_score != null && match.away_score != null && match.status === "FINISHED";
 
   return (
     <div className="pt-20 md:pt-24 min-h-screen">
       <div className="max-w-2xl mx-auto px-4 pb-24">
-        {/* Match header */}
-        <header className="py-6 border-b border-border">
-          <Badge className="mb-3">{match.competition}</Badge>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-            <div className="text-center">
-              <span className="text-2xl" aria-hidden>{match.home.crest}</span>
-              <p className="font-sans font-medium mt-1">{match.home.name}</p>
-            </div>
-            <MatchScore home={match.homeScore} away={match.awayScore} />
-            <div className="text-center">
-              <span className="text-2xl" aria-hidden>{match.away.crest}</span>
-              <p className="font-sans font-medium mt-1">{match.away.name}</p>
-            </div>
+        {/* Top bar: back, competition + round, Follow */}
+        <header className="flex items-center justify-between gap-4 py-4 border-b border-border">
+          <Link href="/" className="flex items-center gap-2 text-sm font-mono text-muted hover:text-white shrink-0">
+            <span aria-hidden>←</span>
+            Matches
+          </Link>
+          <div className="flex items-center justify-center gap-2 min-w-0">
+            {match.emblem_url ? (
+              <img src={match.emblem_url} alt="" className="w-6 h-6 object-contain shrink-0" />
+            ) : null}
+            <span className="text-sm font-mono text-white truncate">
+              {match.competition_name}
+              {roundLabel ? ` ${roundLabel}` : ""}
+            </span>
           </div>
-          <p className="text-sm font-mono text-muted mt-2">
-            {new Date(match.date).toLocaleDateString("en-GB", { dateStyle: "long" })}
-          </p>
+          <button
+            type="button"
+            className="shrink-0 text-xs font-mono uppercase tracking-wider px-3 py-1.5 rounded-pill bg-surface2 text-muted border border-border hover:text-white"
+          >
+            Follow
+          </button>
         </header>
 
-        {/* Tab bar */}
-        <nav className="flex items-center gap-6 border-b border-border py-2 -mb-px">
-          {TABS.map((tab) => (
-            <Link
-              key={tab.slug}
-              href={`/matches/${id}?tab=${tab.slug}`}
-              className="text-sm font-sans font-medium pb-2 border-b-2 border-transparent text-muted2 hover:text-white data-[active]:text-white data-[active]:border-green"
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Match info row */}
+        <div className="py-4 space-y-2 text-sm font-mono text-muted">
+          <div className="flex items-center gap-2">
+            <span aria-hidden>📅</span>
+            <span>{format(matchDate, "EEE, MMMM d, h:mm a")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span aria-hidden>🏟</span>
+            <span>Venue TBC</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span aria-hidden>👤</span>
+            <span>Referee TBC</span>
+          </div>
+        </div>
+
+        {/* Scoreboard */}
+        <section className="py-8 border-b border-border">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+            <div className="text-center min-w-0">
+              <p className="font-sans font-medium text-white truncate">{match.home_team_name}</p>
+              {match.home_crest_url ? (
+                <img src={match.home_crest_url} alt="" className="w-12 h-12 mx-auto mt-2 object-contain" />
+              ) : (
+                <div className="w-12 h-12 mx-auto mt-2 rounded bg-surface3" />
+              )}
+            </div>
+            <div className="flex flex-col items-center">
+              <MatchScore
+                home={match.home_score}
+                away={match.away_score}
+                scheduled={!started && match.status !== "IN_PLAY" && match.status !== "PAUSED"}
+                className="text-3xl md:text-4xl text-white"
+              />
+              <p className="text-xs font-mono text-muted mt-2">{statusLabel(match.status)}</p>
+            </div>
+            <div className="text-center min-w-0">
+              <p className="font-sans font-medium text-white truncate">{match.away_team_name}</p>
+              {match.away_crest_url ? (
+                <img src={match.away_crest_url} alt="" className="w-12 h-12 mx-auto mt-2 object-contain" />
+              ) : (
+                <div className="w-12 h-12 mx-auto mt-2 rounded bg-surface3" />
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Goal scorers */}
+        <section className="py-6 border-b border-border">
+          <h3 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-3">Goal scorers</h3>
+          <p className="text-sm text-muted">Coming soon</p>
+        </section>
+
+        {/* Lineups */}
+        <section className="py-6 border-b border-border">
+          <h3 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-3">Lineups</h3>
+          <p className="text-sm text-muted">Coming soon</p>
+        </section>
+
+        {/* Watch / highlights */}
+        <section className="py-6 border-b border-border">
+          <Link
+            href="#"
+            className="inline-flex items-center gap-2 text-sm font-mono text-green hover:underline"
+          >
+            Watch match / Highlights
+          </Link>
+        </section>
+
+        {/* Ratings box */}
+        <MatchRatingsBox
+          distribution={ratingStats.distribution}
+          average={ratingStats.average}
+          totalCount={ratingStats.totalCount}
+          matchId={id}
+        />
 
         {/* Community logs */}
         <section className="py-6">
@@ -89,12 +161,12 @@ export default async function MatchDetailPage({
                 <LogFeedItem
                   key={log.id}
                   username={log.username}
-                  avatarUrl={log.avatarUrl}
+                  avatarUrl={log.avatar_url}
                   rating={log.rating}
-                  reviewSnippet={log.reviewSnippet}
+                  reviewSnippet={log.review ? log.review.slice(0, 100) : null}
                   matchTitle={matchTitle}
                   matchId={id}
-                  logId={log.logId}
+                  logId={log.id}
                 />
               ))
             )}
