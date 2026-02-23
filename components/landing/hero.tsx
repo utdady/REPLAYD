@@ -7,21 +7,20 @@ export function Hero() {
       <div className="animate-fade-up">
         <p className="font-mono text-[0.68rem] tracking-[0.22em] uppercase text-green flex items-center gap-3 mb-6">
           <span className="w-5 h-px bg-green" aria-hidden />
-          Football. Logged. Rated. Remembered.
+          Log. Rate. Review. Remember.
         </p>
         <h1 className="font-display text-[clamp(4rem,8.5vw,7.5rem)] leading-[0.92] tracking-[0.02em] mb-7">
           EVERY
           <br />
-          GAME
+          MATCH
           <br />
           YOU&apos;VE
           <br />
           <em className="not-italic text-green">EVER SEEN.</em>
         </h1>
         <p className="text-base leading-[1.72] text-muted max-w-[400px] mb-9">
-          The diary for football fans. <strong className="text-white font-normal">Log every game</strong> you watch,
-          rate it as a spectacle, write reviews, build lists — and see what your
-          community is watching in real time.
+          Your personal match diary. <strong className="text-white font-normal">Rate with stars</strong>, write short
+          reviews, add games to lists, and see what the community is watching. Football first — F1, NBA & NFL coming soon.
         </p>
         <div className="flex flex-wrap items-center gap-5">
           <Link

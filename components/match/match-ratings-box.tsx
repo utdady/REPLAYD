@@ -55,28 +55,28 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
             e.stopPropagation();
             onLogClick();
           }}
-          className="flex w-full items-center gap-3 p-3 rounded-card bg-green/20 border border-green/50 ring-1 ring-green/40 hover:bg-green/30 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
+          className="flex w-full items-center gap-3 p-3 rounded-card bg-green border border-green hover:bg-green/90 transition-colors text-left text-black"
         >
           <span
-            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center ring-2 ring-white/20"
+            className="w-10 h-10 rounded-full bg-black/20 shrink-0 bg-cover bg-center ring-2 ring-black/10"
             style={{ backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined }}
             aria-hidden
           />
-          <span className="text-sm text-white font-medium flex-1">Rate, log, review, add to list + more</span>
-          <span className="text-white/70" aria-hidden>⋯</span>
+          <span className="text-sm font-semibold flex-1 text-black">Rate, log, review, add to list + more</span>
+          <span className="text-black/70" aria-hidden>⋯</span>
         </button>
       ) : (
         <Link
           href={`/matches/${matchId}/log`}
-          className="flex w-full items-center gap-3 p-3 rounded-card bg-green/20 border border-green/50 ring-1 ring-green/40 hover:bg-green/30 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
+          className="flex w-full items-center gap-3 p-3 rounded-card bg-green border border-green hover:bg-green/90 transition-colors text-left text-black"
         >
           <span
-            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center ring-2 ring-white/20"
+            className="w-10 h-10 rounded-full bg-black/20 shrink-0 bg-cover bg-center ring-2 ring-black/10"
             style={{ backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined }}
             aria-hidden
           />
-          <span className="text-sm text-white font-medium flex-1">Rate, log, review, add to list + more</span>
-          <span className="text-white/70" aria-hidden>⋯</span>
+          <span className="text-sm font-semibold flex-1 text-black">Rate, log, review, add to list + more</span>
+          <span className="text-black/70" aria-hidden>⋯</span>
         </Link>
       ))}
     </section>

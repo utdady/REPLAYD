@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const FOOTER_LINKS = [
-  { href: "#", label: "About" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "/login", label: "Log in" },
+  { href: "/signup", label: "Sign up" },
   { href: "#", label: "Privacy" },
-  { href: "#", label: "Twitter" },
-  { href: "#", label: "API" },
 ];
 
 export function Footer() {

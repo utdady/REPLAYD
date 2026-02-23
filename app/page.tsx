@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { LandingPage } from "@/components/landing/landing-page";
 import { HomeFeed } from "@/components/landing/home-feed";
 
+// Auth/session uses cookies — cannot be statically generated
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   try {
     const supabase = await createClient();

@@ -3,19 +3,25 @@ const FEATURES = [
     num: "01",
     icon: "📺",
     title: "LOG IT",
-    desc: "Watched a game? Find it, tap log. Mark when you watched it, whether it was a rewatch, and flag spoilers for your followers.",
+    desc: "Finished a match? Open the sheet — rate with stars, then tap \"Review or log\" for the full form: short review, date, rewatch & spoiler tags, and add to lists.",
   },
   {
     num: "02",
     icon: "⭐",
     title: "RATE IT",
-    desc: "Half-star ratings 0.5 to 5. Rate the game as a spectacle — the tension, the quality, the occasion. Not just whether your team won.",
+    desc: "Half-star ratings 0.5 to 5. Rate the match as a spectacle: tension, quality, occasion. Add a 180-character review. Not just who won.",
   },
   {
     num: "03",
     icon: "📋",
     title: "LIST IT",
     desc: "Build lists. Every Clasico you've seen. Greatest comebacks. Games that broke your heart. Rank them. Share them. Own them.",
+  },
+  {
+    num: "04",
+    icon: "👥",
+    title: "SHARE IT",
+    desc: "See community logs on every match — who else watched it, what they rated, and what they said. Like and discover what's trending.",
   },
 ];
 
@@ -27,11 +33,11 @@ export function Features() {
         <span className="w-10 h-px bg-green opacity-40" />
       </p>
       <h2 className="font-display text-[clamp(2.6rem,4.5vw,4rem)] leading-[0.96] tracking-[0.03em] mb-14">
-        THREE THINGS.
+        LOG. RATE.
         <br />
-        THAT&apos;S IT.
+        LIST. SHARE.
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border rounded-section overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-border border border-border rounded-section overflow-hidden">
         {FEATURES.map((f) => (
           <div
             key={f.num}

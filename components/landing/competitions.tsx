@@ -16,11 +16,11 @@ export function Competitions() {
           <span className="w-10 h-px bg-green opacity-40" />
         </p>
         <h2 className="font-display text-[clamp(2.6rem,4.5vw,4rem)] leading-[0.96] tracking-[0.03em] mb-12">
-          SIX COMPETITIONS.
+          FOOTBALL FIRST.
           <br />
-          EVERY GAME.
+          EVERY MATCH.
           <br />
-          2025/26.
+          <span className="text-green">F1 · NBA · NFL COMING SOON.</span>
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border rounded-section overflow-hidden">
           {COMPS.map((c) => (

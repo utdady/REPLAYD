@@ -1,15 +1,6 @@
-"use client";
-
-import { useState } from "react";
+import Link from "next/link";
 
 export function Cta() {
-  const [email, setEmail] = useState("");
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    // TODO: wire to waitlist/API
-  }
-
   return (
     <section className="py-24 md:py-32 px-6 text-center relative overflow-hidden">
       <div
@@ -23,30 +14,25 @@ export function Cta() {
       <h2 className="font-display text-[clamp(2.6rem,4.5vw,4rem)] leading-[0.96] tracking-[0.03em] mb-4 relative">
         START YOUR
         <br />
-        GAME DIARY
+        MATCH DIARY
       </h2>
       <p className="text-[0.95rem] text-muted leading-[1.72] max-w-[340px] mx-auto mb-9 relative">
-        Join fans logging every game, rating every spectacle, and building their football memory.
+        Join fans logging every match, rating every spectacle, and building their watch history.
       </p>
-      <form
-        onSubmit={handleSubmit}
-        className="flex max-w-[360px] mx-auto border border-border2 rounded overflow-hidden bg-surface relative"
-      >
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="your@email.com"
-          maxLength={255}
-          className="flex-1 bg-transparent border-0 outline-none py-3.5 px-4 font-sans text-sm text-white placeholder:text-muted2"
-        />
-        <button
-          type="submit"
-          className="bg-green text-black py-3.5 px-5 font-sans text-sm font-semibold whitespace-nowrap hover:opacity-90 transition-opacity"
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 relative">
+        <Link
+          href="/signup"
+          className="inline-block bg-green text-black py-3.5 px-8 rounded-btn text-sm font-semibold tracking-wide hover:opacity-90 transition-all hover:-translate-y-px"
         >
-          Get early access
-        </button>
-      </form>
+          Sign up free
+        </Link>
+        <Link
+          href="/login"
+          className="text-sm text-muted hover:text-white transition-colors"
+        >
+          Already have an account? Log in
+        </Link>
+      </div>
     </section>
   );
 }
