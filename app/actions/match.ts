@@ -209,8 +209,48 @@ export async function createMatchLog(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You must be signed in to log a match." };
 
+  if (typeof matchId !== "number" || !Number.isInteger(matchId) || matchId < 1 || matchId > 2_147_483_647) {
+    return { ok: false, error: "Invalid match." };
+  }
+
   const { rating, review, watched_date, is_rewatch = false, contains_spoilers = false } = input;
+
+  if (rating != null) {
+    const r = Number(rating);
+    if (Number.isNaN(r) || r < 0.5 || r > 5 || Math.round(r * 2) !== r * 2) {
+      return { ok: false, error: "Rating must be between 0.5 and 5 (half-star steps)." };
+    }
+  }
+
+  let watchedDateValue: string | null = null;
+  if (watched_date != null && watched_date !== "") {
+    const trimmed = String(watched_date).trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return { ok: false, error: "Invalid date format." };
+    }
+    const d = new Date(trimmed);
+    if (Number.isNaN(d.getTime())) return { ok: false, error: "Invalid date." };
+    const minDate = new Date("2000-01-01");
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    if (d < minDate || d > maxDate) {
+      return { ok: false, error: "Date must be between 2000 and next year." };
+    }
+    watchedDateValue = trimmed;
+  }
+
   const reviewTrimmed = (review ?? "").slice(0, 180) || null;
+
+  const RATE_WINDOW_MINUTES = 5;
+  const RATE_MAX_LOGS = 20;
+  const { rows: recentCount } = await query<{ count: number }>(
+    `SELECT COUNT(*)::int AS count FROM match_logs
+     WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
+    [user.id]
+  );
+  if ((recentCount[0]?.count ?? 0) >= RATE_MAX_LOGS) {
+    return { ok: false, error: "Too many logs. Please try again in a few minutes." };
+  }
 
   const sql = `
     INSERT INTO match_logs (user_id, match_id, rating, review, watched_date, is_rewatch, contains_spoilers)
@@ -229,7 +269,7 @@ export async function createMatchLog(
       matchId,
       rating ?? null,
       reviewTrimmed,
-      watched_date ?? null,
+      watchedDateValue,
       is_rewatch,
       contains_spoilers,
     ]);
@@ -240,12 +280,30 @@ export async function createMatchLog(
   }
 }
 
+/** UUID v4 pattern for log_id */
+const LOG_ID_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function toggleLogLike(logId: string): Promise<{ ok: true; liked: boolean } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You must be signed in to like." };
+
+  if (!logId || !LOG_ID_UUID_REGEX.test(logId)) {
+    return { ok: false, error: "Invalid log." };
+  }
+
+  const RATE_WINDOW_MINUTES = 5;
+  const RATE_MAX_LIKES = 60;
+  const { rows: recentLikes } = await query<{ count: number }>(
+    `SELECT COUNT(*)::int AS count FROM log_likes
+     WHERE user_id = $1 AND created_at > NOW() - INTERVAL '5 minutes'`,
+    [user.id]
+  );
+  if ((recentLikes[0]?.count ?? 0) >= RATE_MAX_LIKES) {
+    return { ok: false, error: "Too many actions. Please try again in a few minutes." };
+  }
 
   const checkSql = "SELECT 1 FROM log_likes WHERE user_id = $1 AND log_id = $2";
   const { rows: existing } = await query<Record<string, unknown>>(checkSql, [user.id, logId]);

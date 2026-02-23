@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS match_logs (
   rating           NUMERIC(2,1)
     CHECK (rating IS NULL OR (rating >= 0.5 AND rating <= 5.0 AND MOD(rating * 2, 1) = 0)),
   review           TEXT,
+  CONSTRAINT match_logs_review_length CHECK (review IS NULL OR char_length(review) <= 180),
   is_rewatch       BOOLEAN     DEFAULT FALSE,
   contains_spoilers BOOLEAN    DEFAULT FALSE,
   created_at       TIMESTAMPTZ DEFAULT NOW(),
@@ -156,7 +157,9 @@ CREATE TABLE IF NOT EXISTS lists (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title       TEXT        NOT NULL,
+  CONSTRAINT lists_title_length CHECK (char_length(title) <= 100),
   description TEXT,
+  CONSTRAINT lists_description_length CHECK (description IS NULL OR char_length(description) <= 500),
   is_ranked   BOOLEAN     DEFAULT FALSE,
   is_public   BOOLEAN     DEFAULT TRUE,
   created_at  TIMESTAMPTZ DEFAULT NOW(),

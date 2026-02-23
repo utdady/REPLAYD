@@ -1,5 +1,19 @@
 # Supabase Rate Limits
 
+## App-level rate limits (per user)
+
+In addition to Supabase auth limits, the app enforces **per-user** rate limits in server actions (no extra infra; uses your existing DB):
+
+| Action            | Limit              | Window   |
+|-------------------|--------------------|----------|
+| Create match log  | 20 logs            | 5 minutes |
+| Create list       | 5 lists            | 5 minutes |
+| Like / unlike log | 60 likes           | 5 minutes |
+
+When exceeded, the user sees: *"Too many … Please try again in a few minutes."* These limits reduce spam and abuse from a single account.
+
+---
+
 ## Default Rate Limits (Free Tier)
 
 Supabase has built-in rate limits to prevent abuse:
