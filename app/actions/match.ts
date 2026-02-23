@@ -147,6 +147,7 @@ export async function createMatchLog(
   if (!user) return { ok: false, error: "You must be signed in to log a match." };
 
   const { rating, review, watched_date, is_rewatch = false, contains_spoilers = false } = input;
+  const reviewTrimmed = (review ?? "").slice(0, 280) || null;
 
   const sql = `
     INSERT INTO match_logs (user_id, match_id, rating, review, watched_date, is_rewatch, contains_spoilers)
@@ -164,7 +165,7 @@ export async function createMatchLog(
       user.id,
       matchId,
       rating ?? null,
-      review ?? null,
+      reviewTrimmed,
       watched_date ?? null,
       is_rewatch,
       contains_spoilers,

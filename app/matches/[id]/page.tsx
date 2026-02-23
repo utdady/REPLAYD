@@ -3,9 +3,8 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { getMatchById, getLogsForMatch, getMatchRatingStats } from "@/app/actions/match";
 import { MatchScore } from "@/components/match/match-score";
-import { Button } from "@/components/ui/button";
 import { LogFeedItem } from "@/components/feed/log-feed-item";
-import { MatchRatingsBox } from "@/components/match/match-ratings-box";
+import { MatchLogSheet } from "@/components/match/match-log-sheet";
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -142,45 +141,37 @@ export default async function MatchDetailPage({
           </Link>
         </section>
 
-        {/* Ratings box */}
-        <MatchRatingsBox
+        {/* Ratings box + community logs + sticky CTA (sheet opens from CTA and ratings) */}
+        <MatchLogSheet
+          matchId={match.id}
+          matchIdStr={id}
+          matchTitle={matchTitle}
           distribution={ratingStats.distribution}
           average={ratingStats.average}
           totalCount={ratingStats.totalCount}
-          matchId={id}
-        />
-
-        {/* Community logs */}
-        <section className="py-6">
-          <h3 className="text-sm font-semibold mb-4">Community logs</h3>
-          <div className="space-y-3">
-            {logs.length === 0 ? (
-              <p className="text-sm text-muted">No logs yet. Be the first to log this game.</p>
-            ) : (
-              logs.map((log) => (
-                <LogFeedItem
-                  key={log.id}
-                  username={log.username}
-                  avatarUrl={log.avatar_url}
-                  rating={log.rating}
-                  reviewSnippet={log.review ? log.review.slice(0, 100) : null}
-                  matchTitle={matchTitle}
-                  matchId={id}
-                  logId={log.id}
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Sticky CTA */}
-        <div className="fixed bottom-20 md:bottom-6 left-0 right-0 max-w-2xl mx-auto px-4 z-40">
-          <Link href={`/matches/${id}/log`} className="block">
-            <Button variant="primary" className="w-full py-3">
-              Log this game
-            </Button>
-          </Link>
-        </div>
+        >
+          <section className="py-6">
+            <h3 className="text-sm font-semibold mb-4">Community logs</h3>
+            <div className="space-y-3">
+              {logs.length === 0 ? (
+                <p className="text-sm text-muted">No logs yet. Be the first to log this game.</p>
+              ) : (
+                logs.map((log) => (
+                  <LogFeedItem
+                    key={log.id}
+                    username={log.username}
+                    avatarUrl={log.avatar_url}
+                    rating={log.rating}
+                    reviewSnippet={log.review ? log.review.slice(0, 100) : null}
+                    matchTitle={matchTitle}
+                    matchId={id}
+                    logId={log.id}
+                  />
+                ))
+              )}
+            </div>
+          </section>
+        </MatchLogSheet>
       </div>
     </div>
   );
