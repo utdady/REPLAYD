@@ -51,7 +51,7 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
         <button
           type="button"
           onClick={onLogClick}
-          className="flex w-full items-center gap-3 p-3 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors text-left"
+          className="flex w-full items-center gap-3 p-3 rounded-card bg-surface2 border border-green/50 ring-1 ring-green/40 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
         >
           <span
             className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center"
@@ -64,7 +64,7 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
       ) : (
         <Link
           href={`/matches/${matchId}/log`}
-          className="flex items-center gap-3 p-3 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors"
+          className="flex w-full items-center gap-3 p-3 rounded-card bg-surface2 border border-green/50 ring-1 ring-green/40 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
         >
           <span
             className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center"

@@ -57,6 +57,8 @@ export function MatchLogSheet({
   const [newListTitle, setNewListTitle] = React.useState("");
   const [newListDescription, setNewListDescription] = React.useState("");
   const [creatingList, setCreatingList] = React.useState(false);
+  const [sheetView, setSheetView] = React.useState<"quick" | "detail">("quick");
+  const [savingQuick, setSavingQuick] = React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -111,7 +113,22 @@ export function MatchLogSheet({
   const closeSheet = React.useCallback(() => {
     setOpen(false);
     setError(null);
+    setSheetView("quick");
   }, []);
+
+  React.useEffect(() => {
+    if (open) setSheetView("quick");
+  }, [open]);
+
+  async function handleQuickDone() {
+    if (rating != null) {
+      setSavingQuick(true);
+      await createMatchLog(matchId, { rating });
+      setSavingQuick(false);
+    }
+    closeSheet();
+    router.refresh();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -119,7 +136,7 @@ export function MatchLogSheet({
     setSubmitting(true);
     const result = await createMatchLog(matchId, {
       rating: rating ?? undefined,
-      review: review.trim().slice(0, 280) || undefined,
+      review: review.trim().slice(0, 180) || undefined,
       watched_date: watchedDate || undefined,
       is_rewatch: isRewatch,
       contains_spoilers: containsSpoilers,
@@ -145,36 +162,78 @@ export function MatchLogSheet({
         avatarUrl={currentUserAvatarUrl}
       />
       {children}
-      {matchFinished && (
-        <div className="fixed bottom-20 md:bottom-6 left-0 right-0 max-w-2xl mx-auto px-4 z-40">
-          <Button variant="primary" className="w-full py-3" onClick={openSheet}>
-            Log this game
-          </Button>
-        </div>
-      )}
       <BottomSheet open={open} onClose={closeSheet} title={matchTitle}>
-        <form onSubmit={handleSubmit} className="space-y-5 pb-6">
-          <div>
+        {sheetView === "quick" ? (
+          <div className="space-y-5 pb-6">
+            <div>
+              <label className="block text-sm font-medium text-muted mb-2">Rate</label>
+              <StarRating value={rating} onChange={setRating} size="lg" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => setSheetView("detail")}
+              >
+                Review or log
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                onClick={() => setSheetView("detail")}
+              >
+                Add to lists
+              </Button>
+              <Button type="button" variant="secondary" className="w-full" onClick={() => {}}>
+                Share
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              className="w-full py-3"
+              onClick={handleQuickDone}
+              disabled={savingQuick}
+            >
+              {savingQuick ? "Saving…" : "Done"}
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5 pb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setSheetView("quick")}
+                className="text-muted hover:text-white p-1 -ml-1"
+                aria-label="Back"
+              >
+                ← Back
+              </button>
+            </div>
+            <div>
             <label className="block text-sm font-medium text-muted mb-2">Rating (optional)</label>
             <StarRating value={rating} onChange={setRating} size="lg" />
           </div>
           <div>
             <label htmlFor="sheet-review" className="block text-sm font-medium text-muted mb-2">
-              Review (optional, max 280 characters)
+              Review (optional, max 180 characters)
             </label>
-            <div className="flex items-start gap-3">
+            <div className="relative">
               <textarea
                 id="sheet-review"
                 value={review}
-                onChange={(e) => setReview(e.target.value.slice(0, 280))}
-                maxLength={280}
+                onChange={(e) => setReview(e.target.value.slice(0, 180))}
+                maxLength={180}
                 rows={3}
-                className="flex-1 min-w-0 px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
+                className="w-full px-3 py-2 pr-14 pb-12 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
                 placeholder="What did you think?"
               />
-              <ReviewCharDial value={review.length} size={44} className="shrink-0 mt-1" />
+              <div className="absolute bottom-2 right-2">
+                <ReviewCharDial value={review.length} max={180} size={44} showCountdown />
+              </div>
             </div>
-            <p className="text-xs font-mono text-muted mt-1 text-right">{review.length}/280</p>
           </div>
           <div>
             <label htmlFor="sheet-watched_date" className="block text-sm font-medium text-muted mb-2">
@@ -290,6 +349,7 @@ export function MatchLogSheet({
             {submitting ? "Saving…" : "Done"}
           </Button>
         </form>
+        )}
       </BottomSheet>
     </>
   );

@@ -119,12 +119,39 @@ export async function getLogsForMatch(
       )
     ${orderClause}
   `;
-  const { rows } = await query<LogForMatchRow & { like_count: number }>(sql, [
-    mid,
-    currentUserId ?? null,
-    filterByFriends && currentUserId != null,
-  ]);
-  return rows.map((r) => ({ ...r, like_count: r.like_count ?? 0 }));
+  try {
+    const { rows } = await query<LogForMatchRow & { like_count: number }>(sql, [
+      mid,
+      currentUserId ?? null,
+      filterByFriends && currentUserId != null,
+    ]);
+    return rows.map((r) => ({ ...r, like_count: r.like_count ?? 0 }));
+  } catch {
+    const fallbackSql = `
+      SELECT
+        ml.id::text,
+        ml.user_id::text,
+        p.username,
+        p.avatar_url,
+        ml.rating::float,
+        ml.review,
+        ml.created_at::text
+      FROM match_logs ml
+      JOIN profiles p ON p.id = ml.user_id
+      WHERE ml.match_id = $1
+        AND (
+          NOT $3::boolean
+          OR EXISTS (SELECT 1 FROM follows f WHERE f.follower_id = $2 AND f.following_id = ml.user_id)
+        )
+      ORDER BY ml.created_at DESC
+    `;
+    const { rows } = await query<LogForMatchRow & { like_count?: number }>(fallbackSql, [
+      mid,
+      currentUserId ?? null,
+      filterByFriends && currentUserId != null,
+    ]);
+    return rows.map((r) => ({ ...r, like_count: r.like_count ?? 0 }));
+  }
 }
 
 export interface MatchRatingStats {
@@ -183,7 +210,7 @@ export async function createMatchLog(
   if (!user) return { ok: false, error: "You must be signed in to log a match." };
 
   const { rating, review, watched_date, is_rewatch = false, contains_spoilers = false } = input;
-  const reviewTrimmed = (review ?? "").slice(0, 280) || null;
+  const reviewTrimmed = (review ?? "").slice(0, 180) || null;
 
   const sql = `
     INSERT INTO match_logs (user_id, match_id, rating, review, watched_date, is_rewatch, contains_spoilers)

@@ -45,21 +45,22 @@ export function LogMatchForm({ matchId, matchIdStr }: { matchId: number; matchId
       </div>
       <div>
         <label htmlFor="review" className="block text-sm font-medium text-muted mb-2">
-          Review (optional, max 280 characters)
+          Review (optional, max 180 characters)
         </label>
-        <div className="flex items-start gap-3">
+        <div className="relative">
           <textarea
             id="review"
             value={review}
-            onChange={(e) => setReview(e.target.value.slice(0, 280))}
-            maxLength={280}
+            onChange={(e) => setReview(e.target.value.slice(0, 180))}
+            maxLength={180}
             rows={4}
-            className="flex-1 min-w-0 px-3 py-2 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
+            className="w-full px-3 py-2 pr-14 pb-12 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
             placeholder="What did you think?"
           />
-          <ReviewCharDial value={review.length} size={44} className="shrink-0 mt-1" />
+          <div className="absolute bottom-2 right-2">
+            <ReviewCharDial value={review.length} max={180} size={44} />
+          </div>
         </div>
-        <p className="text-xs font-mono text-muted mt-1 text-right">{review.length}/280</p>
       </div>
       <div>
         <label htmlFor="watched_date" className="block text-sm font-medium text-muted mb-2">

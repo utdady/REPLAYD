@@ -9,11 +9,18 @@ export interface BottomSheetProps {
   children: React.ReactNode;
 }
 
+const DRAG_CLOSE_THRESHOLD = 100;
+
 export function BottomSheet({ open, onClose, title, children }: BottomSheetProps) {
-  const [isDragging, setIsDragging] = React.useState(false);
   const [startY, setStartY] = React.useState(0);
   const [currentY, setCurrentY] = React.useState(0);
+  const currentYRef = React.useRef(0);
   const sheetRef = React.useRef<HTMLDivElement>(null);
+  const handleAreaRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    currentYRef.current = currentY;
+  }, [currentY]);
 
   React.useEffect(() => {
     if (open) {
@@ -26,25 +33,33 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     };
   }, [open]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
-    setStartY(e.touches[0].clientY);
+  const getClientY = (e: React.PointerEvent) => e.clientY;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    setStartY(getClientY(e));
+    setCurrentY(0);
+    handleAreaRef.current?.setPointerCapture(e.pointerId);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const y = e.touches[0].clientY;
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const y = getClientY(e);
     const delta = y - startY;
     if (delta > 0) {
       setCurrentY(delta);
     }
   };
 
-  const handleTouchEnd = () => {
-    if (currentY > 100) {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    handleAreaRef.current?.releasePointerCapture(e.pointerId);
+    if (currentYRef.current > DRAG_CLOSE_THRESHOLD) {
       onClose();
     }
-    setIsDragging(false);
+    setCurrentY(0);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent) => {
+    handleAreaRef.current?.releasePointerCapture(e.pointerId);
     setCurrentY(0);
   };
 
@@ -62,14 +77,18 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         ref={sheetRef}
         className="bottom-sheet"
         style={{ transform: currentY > 0 ? `translateY(${currentY}px)` : undefined }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         role="dialog"
         aria-modal
         aria-labelledby="bottom-sheet-title"
       >
-        <div className="bottom-sheet__handle-area" onTouchStart={handleTouchStart}>
+        <div
+          ref={handleAreaRef}
+          className="bottom-sheet__handle-area"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+        >
           <div className="bottom-sheet__handle" />
         </div>
         <div className="bottom-sheet__header">
