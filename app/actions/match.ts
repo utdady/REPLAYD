@@ -21,6 +21,7 @@ export interface MatchByIdRow {
   away_team_id: number;
   away_team_name: string;
   away_crest_url: string | null;
+  [key: string]: unknown;
 }
 
 export async function getMatchById(id: string): Promise<MatchByIdRow | null> {
@@ -65,6 +66,7 @@ export interface LogForMatchRow {
   rating: number | null;
   review: string | null;
   created_at: string;
+  [key: string]: unknown;
 }
 
 export async function getLogsForMatch(matchId: string): Promise<LogForMatchRow[]> {
@@ -107,7 +109,7 @@ export async function getMatchRatingStats(matchId: string): Promise<MatchRatingS
     WHERE match_id = $1 AND rating IS NOT NULL
     GROUP BY rating
   `;
-  const { rows } = await query<{ rating: number; count: number }>(sql, [mid]);
+  const { rows } = await query<{ rating: number; count: number; [key: string]: unknown }>(sql, [mid]);
 
   const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   let totalCount = 0;
