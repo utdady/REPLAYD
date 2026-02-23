@@ -50,29 +50,33 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
       {showLogCta && (onLogClick ? (
         <button
           type="button"
-          onClick={onLogClick}
-          className="flex w-full items-center gap-3 p-3 rounded-card bg-surface2 border border-green/50 ring-1 ring-green/40 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onLogClick();
+          }}
+          className="flex w-full items-center gap-3 p-3 rounded-card bg-green/20 border border-green/50 ring-1 ring-green/40 hover:bg-green/30 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
         >
           <span
-            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center"
+            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center ring-2 ring-white/20"
             style={{ backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined }}
             aria-hidden
           />
-          <span className="text-sm text-muted flex-1">Rate, log, review, add to list + more</span>
-          <span className="text-muted" aria-hidden>⋯</span>
+          <span className="text-sm text-white font-medium flex-1">Rate, log, review, add to list + more</span>
+          <span className="text-white/70" aria-hidden>⋯</span>
         </button>
       ) : (
         <Link
           href={`/matches/${matchId}/log`}
-          className="flex w-full items-center gap-3 p-3 rounded-card bg-surface2 border border-green/50 ring-1 ring-green/40 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
+          className="flex w-full items-center gap-3 p-3 rounded-card bg-green/20 border border-green/50 ring-1 ring-green/40 hover:bg-green/30 hover:border-green/70 hover:ring-green/50 transition-colors text-left"
         >
           <span
-            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center"
+            className="w-10 h-10 rounded-full bg-surface3 shrink-0 bg-cover bg-center ring-2 ring-white/20"
             style={{ backgroundImage: avatarUrl ? `url(${avatarUrl})` : undefined }}
             aria-hidden
           />
-          <span className="text-sm text-muted flex-1">Rate, log, review, add to list + more</span>
-          <span className="text-muted" aria-hidden>⋯</span>
+          <span className="text-sm text-white font-medium flex-1">Rate, log, review, add to list + more</span>
+          <span className="text-white/70" aria-hidden>⋯</span>
         </Link>
       ))}
     </section>
