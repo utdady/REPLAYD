@@ -172,7 +172,7 @@ export function MatchLogSheet({
             <div className="flex flex-col gap-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="w-full"
                 onClick={() => setSheetView("detail")}
               >
@@ -180,13 +180,13 @@ export function MatchLogSheet({
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="w-full"
                 onClick={() => setSheetView("detail")}
               >
                 Add to lists
               </Button>
-              <Button type="button" variant="secondary" className="w-full" onClick={() => {}}>
+              <Button type="button" variant="outline" className="w-full" onClick={() => {}}>
                 Share
               </Button>
             </div>
