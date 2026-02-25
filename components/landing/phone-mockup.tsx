@@ -221,8 +221,8 @@ export function PhoneMockup() {
             </div>
             <div className="w-8 h-8 rounded-full bg-green flex items-center justify-center text-black font-bold text-lg -mt-1.5" style={{ boxShadow: "0 0 20px rgba(61,220,132,.35)" }}>+</div>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="text-base opacity-40">⚡</span>
-              <span className="text-[0.46rem] tracking-wider text-muted2">Activity</span>
+              <span className="text-base opacity-40">👥</span>
+              <span className="text-[0.46rem] tracking-wider text-muted2">Community</span>
             </div>
             <div className="flex flex-col items-center gap-0.5">
               <span className="text-base opacity-40">👤</span>

@@ -253,7 +253,7 @@ export function HomeFeed() {
             <MatchPoster key={m.id} id={m.id} competition={m.competition} home={m.home} away={m.away} homeScore={m.homeScore} awayScore={m.awayScore} />
           ))}
         </ScrollRow>
-        <ScrollRow title="New from friends" seeAllHref="/activity" className="pt-6 pb-12">
+        <ScrollRow title="New from friends" seeAllHref="/community" className="pt-6 pb-12">
           {FROM_FRIENDS.map((m) => (
             <MatchPoster key={m.id} id={m.id} competition={m.competition} home={m.home} away={m.away} homeScore={m.homeScore} awayScore={m.awayScore} friend={m.friend} />
           ))}

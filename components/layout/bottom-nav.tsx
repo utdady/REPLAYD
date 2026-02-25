@@ -7,7 +7,7 @@ const items = [
   { href: "/", label: "Games", icon: "⚽" },
   { href: "/search", label: "Search", icon: "🔍" },
   { href: "/log", label: "Log", icon: "+", center: true },
-  { href: "/activity", label: "Activity", icon: "⚡" },
+  { href: "/community", label: "Community", icon: "👥" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 
