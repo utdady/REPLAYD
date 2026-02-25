@@ -153,6 +153,18 @@ CREATE TABLE IF NOT EXISTS log_likes (
 );
 CREATE INDEX IF NOT EXISTS idx_log_likes_log ON log_likes(log_id);
 
+-- Comments on match logs (community posts)
+CREATE TABLE IF NOT EXISTS log_comments (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  log_id     UUID        NOT NULL REFERENCES match_logs(id) ON DELETE CASCADE,
+  user_id    UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  body       TEXT        NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT log_comments_body_length CHECK (char_length(body) <= 500)
+);
+CREATE INDEX IF NOT EXISTS idx_log_comments_log ON log_comments(log_id);
+CREATE INDEX IF NOT EXISTS idx_log_comments_log_created ON log_comments(log_id, created_at);
+
 CREATE TABLE IF NOT EXISTS lists (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -211,9 +223,26 @@ CREATE INDEX IF NOT EXISTS idx_follows_following      ON follows(following_id);
 -- ROW-LEVEL SECURITY
 -- ============================================================
 
+-- Reference data: read-only for all (writes via backend/sync only)
+ALTER TABLE competitions     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seasons          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teams            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE matches          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE competition_teams ENABLE ROW LEVEL SECURITY;
+ALTER TABLE standings        ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "competitions_select_all"      ON competitions FOR SELECT USING (true);
+CREATE POLICY "seasons_select_all"           ON seasons FOR SELECT USING (true);
+CREATE POLICY "teams_select_all"             ON teams FOR SELECT USING (true);
+CREATE POLICY "matches_select_all"           ON matches FOR SELECT USING (true);
+CREATE POLICY "competition_teams_select_all"  ON competition_teams FOR SELECT USING (true);
+CREATE POLICY "standings_select_all"         ON standings FOR SELECT USING (true);
+
+-- User data
 ALTER TABLE profiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE match_logs   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE log_likes    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE log_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lists        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE list_items   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE follows      ENABLE ROW LEVEL SECURITY;
@@ -234,6 +263,11 @@ CREATE POLICY "logs_delete_own"      ON match_logs FOR DELETE USING (auth.uid() 
 CREATE POLICY "log_likes_select_all" ON log_likes FOR SELECT USING (true);
 CREATE POLICY "log_likes_insert_own" ON log_likes FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "log_likes_delete_own"  ON log_likes FOR DELETE USING (auth.uid() = user_id);
+
+-- Log comments: public read, own insert/delete
+CREATE POLICY "log_comments_select_all" ON log_comments FOR SELECT USING (true);
+CREATE POLICY "log_comments_insert_own" ON log_comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "log_comments_delete_own" ON log_comments FOR DELETE USING (auth.uid() = user_id);
 
 -- Lists: public lists readable by all, private by owner only
 CREATE POLICY "lists_select_public"  ON lists FOR SELECT USING (is_public = true OR auth.uid() = user_id);
