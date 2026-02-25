@@ -348,7 +348,9 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION touch_updated_at()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
+RETURNS TRIGGER LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;

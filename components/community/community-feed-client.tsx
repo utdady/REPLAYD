@@ -27,11 +27,23 @@ export function CommunityFeedClient({ currentUserId }: CommunityFeedClientProps)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center border-b border-border">
+      <div className="flex items-center justify-end mb-1">
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as CommunitySort)}
+          className="bg-surface2 border border-border rounded-btn px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-border2"
+          aria-label="Sort by"
+        >
+          <option value="newest">Newest</option>
+          <option value="trending">Trending</option>
+        </select>
+      </div>
+
+      <div className="flex items-stretch border-b border-border">
         <button
           type="button"
           onClick={() => setTab("feed")}
-          className={`py-3 px-4 text-sm font-medium relative ${
+          className={`flex-1 py-3 text-center text-sm font-medium relative ${
             tab === "feed" ? "text-white" : "text-muted hover:text-white"
           }`}
         >
@@ -43,7 +55,7 @@ export function CommunityFeedClient({ currentUserId }: CommunityFeedClientProps)
         <button
           type="button"
           onClick={() => setTab("friends")}
-          className={`py-3 px-4 text-sm font-medium relative ${
+          className={`flex-1 py-3 text-center text-sm font-medium relative ${
             tab === "friends" ? "text-white" : "text-muted hover:text-white"
           }`}
         >
@@ -52,18 +64,6 @@ export function CommunityFeedClient({ currentUserId }: CommunityFeedClientProps)
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green" aria-hidden />
           )}
         </button>
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as CommunitySort)}
-          className="bg-surface2 border border-border rounded-btn px-3 py-1.5 text-sm text-white font-mono focus:outline-none focus:border-border2"
-          aria-label="Sort by"
-        >
-          <option value="newest">Newest</option>
-          <option value="trending">Trending</option>
-        </select>
       </div>
 
       {loading ? (
