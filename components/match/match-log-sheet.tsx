@@ -17,6 +17,58 @@ import { ReviewCharDial } from "@/components/ui/review-char-dial";
 import { Button } from "@/components/ui/button";
 import { MatchRatingsBox } from "@/components/match/match-ratings-box";
 
+const QuickWatchIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const QuickLikeIcon = ({ active = false }: { active?: boolean }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill={active ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+  </svg>
+);
+
+const QuickWatchlistIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="7" />
+    <polyline points="12 8 12 12 15 13" />
+    <path d="M19 3.5v3" />
+    <path d="M17.5 5h3" />
+  </svg>
+);
+
 export interface MatchLogSheetProps {
   matchId: number;
   matchIdStr: string;
@@ -210,33 +262,42 @@ export function MatchLogSheet({
         {sheetView === "quick" ? (
           <div className="space-y-5 pb-6">
             <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-4">
                 <Button
                   type="button"
-                  variant={watched ? "primary" : "outline"}
-                  className="w-full"
+                  variant="ghost"
+                  className={`flex flex-col items-center gap-1 py-4 rounded-xl border ${
+                    watched ? "border-green text-white" : "border-surface3 text-muted"
+                  }`}
                   onClick={() => handleToggleQuick("watched")}
                   disabled={quickActionsLoading}
                 >
-                  Watched
+                  <QuickWatchIcon />
+                  <span className="text-xs font-medium">Watched</span>
                 </Button>
                 <Button
                   type="button"
-                  variant={liked ? "primary" : "outline"}
-                  className="w-full"
+                  variant="ghost"
+                  className={`flex flex-col items-center gap-1 py-4 rounded-xl border ${
+                    liked ? "border-green text-white" : "border-surface3 text-muted"
+                  }`}
                   onClick={() => handleToggleQuick("liked")}
                   disabled={quickActionsLoading}
                 >
-                  Like
+                  <QuickLikeIcon active={liked} />
+                  <span className="text-xs font-medium">Like</span>
                 </Button>
                 <Button
                   type="button"
-                  variant={inWatchlist ? "primary" : "outline"}
-                  className="w-full"
+                  variant="ghost"
+                  className={`flex flex-col items-center gap-1 py-4 rounded-xl border ${
+                    inWatchlist ? "border-green text-white" : "border-surface3 text-muted"
+                  }`}
                   onClick={() => handleToggleQuick("watchlist")}
                   disabled={quickActionsLoading}
                 >
-                  Watchlist
+                  <QuickWatchlistIcon />
+                  <span className="text-xs font-medium">Watchlist</span>
                 </Button>
               </div>
               {quickActionsError && (
@@ -290,8 +351,19 @@ export function MatchLogSheet({
                 ← Back
               </button>
             </div>
-            <div>
-            <label className="block text-sm font-medium text-muted mb-2">Rating (optional)</label>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-muted">Rate</label>
+              <button
+                type="button"
+                onClick={() => handleToggleQuick("liked")}
+                className="flex items-center gap-1 text-xs text-muted hover:text-white"
+                disabled={quickActionsLoading}
+                aria-label={liked ? "Remove like" : "Like this match"}
+              >
+                <QuickLikeIcon active={liked} />
+              </button>
+            </div>
             <StarRating value={rating} onChange={setRating} size="lg" />
           </div>
           <div>
