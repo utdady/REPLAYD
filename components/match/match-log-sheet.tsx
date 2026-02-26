@@ -7,6 +7,8 @@ import {
   getListsForCurrentUser,
   createList,
   addMatchToList,
+  getMatchQuickListsState,
+  toggleSystemListItem,
 } from "@/app/actions/list";
 import type { ListSummary } from "@/app/actions/list";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
@@ -60,16 +62,30 @@ export function MatchLogSheet({
   const [sheetView, setSheetView] = React.useState<"quick" | "detail">("quick");
   const [savingQuick, setSavingQuick] = React.useState(false);
 
+  const [liked, setLiked] = React.useState(false);
+  const [watched, setWatched] = React.useState(false);
+  const [inWatchlist, setInWatchlist] = React.useState(false);
+  const [canUseQuickActions, setCanUseQuickActions] = React.useState(true);
+  const [quickActionsLoading, setQuickActionsLoading] = React.useState(false);
+  const [quickActionsError, setQuickActionsError] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     if (open) {
       setListsLoading(true);
-      getListsForCurrentUser()
-        .then(setLists)
+      Promise.all([getListsForCurrentUser(), getMatchQuickListsState(matchId)])
+        .then(([userLists, quickState]) => {
+          setLists(userLists);
+          setLiked(quickState.liked);
+          setWatched(quickState.watched);
+          setInWatchlist(quickState.watchlist);
+          setCanUseQuickActions(quickState.authenticated);
+          setQuickActionsError(null);
+        })
         .finally(() => setListsLoading(false));
       setAddToListError(null);
       setAddToListSuccess(false);
     }
-  }, [open]);
+  }, [open, matchId]);
 
   const handleAddToList = async () => {
     if (!selectedListId) return;
@@ -130,6 +146,34 @@ export function MatchLogSheet({
     router.refresh();
   }
 
+  async function handleToggleQuick(systemKey: "liked" | "watched" | "watchlist") {
+    if (!canUseQuickActions) {
+      setQuickActionsError("Sign in to save this match.");
+      return;
+    }
+    setQuickActionsError(null);
+    setQuickActionsLoading(true);
+
+    const applyLocal = (key: typeof systemKey, active: boolean) => {
+      if (key === "liked") setLiked(active);
+      else if (key === "watched") setWatched(active);
+      else setInWatchlist(active);
+    };
+
+    const currentActive =
+      systemKey === "liked" ? liked : systemKey === "watched" ? watched : inWatchlist;
+    applyLocal(systemKey, !currentActive);
+
+    const result = await toggleSystemListItem(systemKey, matchId);
+    setQuickActionsLoading(false);
+    if (!result.ok) {
+      applyLocal(systemKey, currentActive);
+      setQuickActionsError(result.error);
+    } else {
+      applyLocal(systemKey, result.active);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -165,6 +209,40 @@ export function MatchLogSheet({
       <BottomSheet open={open} onClose={closeSheet} title={matchTitle}>
         {sheetView === "quick" ? (
           <div className="space-y-5 pb-6">
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant={watched ? "primary" : "outline"}
+                  className="w-full"
+                  onClick={() => handleToggleQuick("watched")}
+                  disabled={quickActionsLoading}
+                >
+                  Watched
+                </Button>
+                <Button
+                  type="button"
+                  variant={liked ? "primary" : "outline"}
+                  className="w-full"
+                  onClick={() => handleToggleQuick("liked")}
+                  disabled={quickActionsLoading}
+                >
+                  Like
+                </Button>
+                <Button
+                  type="button"
+                  variant={inWatchlist ? "primary" : "outline"}
+                  className="w-full"
+                  onClick={() => handleToggleQuick("watchlist")}
+                  disabled={quickActionsLoading}
+                >
+                  Watchlist
+                </Button>
+              </div>
+              {quickActionsError && (
+                <p className="text-xs text-red text-center">{quickActionsError}</p>
+              )}
+            </div>
             <div>
               <label className="block text-sm font-medium text-muted mb-2">Rate</label>
               <StarRating value={rating} onChange={setRating} size="lg" />

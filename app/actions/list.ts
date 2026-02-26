@@ -206,3 +206,162 @@ export async function addMatchToList(
     return { ok: false, error: message };
   }
 }
+
+type SystemListKey = "liked" | "watched" | "watchlist";
+
+interface SystemListsForUser {
+  likedListId: string;
+  watchedListId: string;
+  watchlistListId: string;
+}
+
+async function ensureSystemListsForUser(userId: string): Promise<SystemListsForUser> {
+  const existingSql = `
+    SELECT id::text, system_key
+    FROM lists
+    WHERE user_id = $1 AND is_system = true AND system_key IN ('liked', 'watched', 'watchlist')
+  `;
+  const { rows } = await query<{ id: string; system_key: SystemListKey | null }>(existingSql, [userId]);
+  const map: Partial<Record<SystemListKey, string>> = {};
+  for (const row of rows) {
+    if (row.system_key) {
+      map[row.system_key] = row.id;
+    }
+  }
+
+  const titles: Record<SystemListKey, string> = {
+    liked: "Liked",
+    watched: "Watched",
+    watchlist: "Watchlist",
+  };
+
+  for (const key of ["liked", "watched", "watchlist"] as SystemListKey[]) {
+    if (!map[key]) {
+      const insertSql = `
+        INSERT INTO lists (user_id, title, description, is_public, is_system, system_key)
+        VALUES ($1, $2, NULL, false, true, $3)
+        ON CONFLICT (user_id, system_key) WHERE is_system = true DO UPDATE
+          SET title = EXCLUDED.title
+        RETURNING id::text
+      `;
+      const { rows: inserted } = await query<{ id: string }>(insertSql, [userId, titles[key], key]);
+      map[key] = inserted[0].id;
+    }
+  }
+
+  return {
+    likedListId: map.liked as string,
+    watchedListId: map.watched as string,
+    watchlistListId: map.watchlist as string,
+  };
+}
+
+export interface MatchQuickListsState {
+  authenticated: boolean;
+  liked: boolean;
+  watched: boolean;
+  watchlist: boolean;
+  likedListId: string | null;
+  watchedListId: string | null;
+  watchlistListId: string | null;
+}
+
+export async function getMatchQuickListsState(
+  matchId: number
+): Promise<MatchQuickListsState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      authenticated: false,
+      liked: false,
+      watched: false,
+      watchlist: false,
+      likedListId: null,
+      watchedListId: null,
+      watchlistListId: null,
+    };
+  }
+
+  const systemLists = await ensureSystemListsForUser(user.id);
+  const listIds = [
+    systemLists.likedListId,
+    systemLists.watchedListId,
+    systemLists.watchlistListId,
+  ];
+
+  const membershipSql = `
+    SELECT list_id::text
+    FROM list_items
+    WHERE match_id = $1 AND list_id = ANY($2::uuid[])
+  `;
+  const { rows: membershipRows } = await query<{ list_id: string }>(membershipSql, [
+    matchId,
+    listIds,
+  ]);
+  const present = new Set(membershipRows.map((r) => r.list_id));
+
+  return {
+    authenticated: true,
+    liked: present.has(systemLists.likedListId),
+    watched: present.has(systemLists.watchedListId),
+    watchlist: present.has(systemLists.watchlistListId),
+    likedListId: systemLists.likedListId,
+    watchedListId: systemLists.watchedListId,
+    watchlistListId: systemLists.watchlistListId,
+  };
+}
+
+export async function toggleSystemListItem(
+  systemKey: SystemListKey,
+  matchId: number
+): Promise<{ ok: true; active: boolean } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You must be signed in to save this match." };
+
+  if (typeof matchId !== "number" || !Number.isInteger(matchId) || matchId < 1 || matchId > 2_147_483_647) {
+    return { ok: false, error: "Invalid match." };
+  }
+
+  const systemLists = await ensureSystemListsForUser(user.id);
+  const listId =
+    systemKey === "liked"
+      ? systemLists.likedListId
+      : systemKey === "watched"
+      ? systemLists.watchedListId
+      : systemLists.watchlistListId;
+
+  const existsSql = `
+    SELECT 1
+    FROM list_items
+    WHERE list_id = $1 AND match_id = $2
+    LIMIT 1
+  `;
+  const { rows: existing } = await query<{ "?column?": unknown }>(existsSql, [listId, matchId]);
+
+  try {
+    if (existing.length > 0) {
+      const deleteSql = `DELETE FROM list_items WHERE list_id = $1 AND match_id = $2`;
+      await query(deleteSql, [listId, matchId]);
+      return { ok: true, active: false };
+    }
+
+    const insertSql = `
+      INSERT INTO list_items (list_id, match_id)
+      VALUES ($1, $2)
+      ON CONFLICT (list_id, match_id) DO NOTHING
+    `;
+    await query(insertSql, [listId, matchId]);
+    return { ok: true, active: true };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to update list";
+    return { ok: false, error: message };
+  }
+}
+

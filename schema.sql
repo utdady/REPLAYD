@@ -174,6 +174,8 @@ CREATE TABLE IF NOT EXISTS lists (
   CONSTRAINT lists_description_length CHECK (description IS NULL OR char_length(description) <= 500),
   is_ranked   BOOLEAN     DEFAULT FALSE,
   is_public   BOOLEAN     DEFAULT TRUE,
+  is_system   BOOLEAN     NOT NULL DEFAULT FALSE,   -- true for built-in lists like Liked/Watched/Watchlist
+  system_key  TEXT,                                 -- 'liked' | 'watched' | 'watchlist' when is_system = true
   created_at  TIMESTAMPTZ DEFAULT NOW(),
   updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
