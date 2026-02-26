@@ -368,16 +368,21 @@ export function MatchLogSheet({
           </div>
           <div>
             <label htmlFor="sheet-review" className="block text-sm font-medium text-muted mb-2">
-              Review (optional, max 180 characters)
+              Review
             </label>
             <div className="relative">
               <textarea
                 id="sheet-review"
                 value={review}
-                onChange={(e) => setReview(e.target.value.slice(0, 180))}
+                onChange={(e) => {
+                  const value = e.target.value.slice(0, 180);
+                  e.target.style.height = "auto";
+                  e.target.style.height = `${e.target.scrollHeight}px`;
+                  setReview(value);
+                }}
                 maxLength={180}
                 rows={3}
-                className="w-full px-3 py-2 pr-14 pb-12 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2"
+                className="w-full px-3 py-2 pr-14 pb-12 rounded-btn bg-surface2 border border-border text-white placeholder:text-muted focus:outline-none focus:border-border2 resize-none"
                 placeholder="What did you think?"
               />
               <div className="absolute bottom-2 right-2">
@@ -387,7 +392,7 @@ export function MatchLogSheet({
           </div>
           <div>
             <label htmlFor="sheet-watched_date" className="block text-sm font-medium text-muted mb-2">
-              Watched on (optional)
+              Watched on
             </label>
             <input
               id="sheet-watched_date"
@@ -460,7 +465,7 @@ export function MatchLogSheet({
                 Create a list and add this match
               </button>
             ) : (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-stretch gap-2">
                 <select
                   value={selectedListId}
                   onChange={(e) => setSelectedListId(e.target.value)}
@@ -478,6 +483,7 @@ export function MatchLogSheet({
                   variant="primary"
                   onClick={handleAddToList}
                   disabled={!selectedListId}
+                  className="px-4 py-2 rounded-btn h-full"
                 >
                   Add
                 </Button>
