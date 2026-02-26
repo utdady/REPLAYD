@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { getMatchById, getLogsForMatch, getMatchRatingStats } from "@/app/actions/match";
+import { getMatchById, getMatchGoals, getMatchLineups, getLogsForMatch, getMatchRatingStats } from "@/app/actions/match";
 import { getMyProfile } from "@/app/actions/profile";
 import { MatchScore } from "@/components/match/match-score";
 import { MatchLogSheet } from "@/components/match/match-log-sheet";
@@ -41,9 +41,11 @@ export default async function MatchDetailPage({
   const currentUserAvatarUrl = currentUser?.avatar_url ?? null;
   const currentUserId = currentUser?.id ?? null;
 
-  const [logs, ratingStats] = await Promise.all([
+  const [logs, ratingStats, goals, lineups] = await Promise.all([
     getLogsForMatch(id, { currentUserId }),
     getMatchRatingStats(id),
+    getMatchGoals(id),
+    getMatchLineups(id),
   ]);
 
   const matchTitle = `${match.home_team_name} vs ${match.away_team_name}`;
@@ -79,11 +81,11 @@ export default async function MatchDetailPage({
           </div>
           <div className="flex items-center gap-2">
             <span aria-hidden>🏟</span>
-            <span>Venue TBC</span>
+            <span>{match.venue ?? "Venue TBC"}</span>
           </div>
           <div className="flex items-center gap-2">
             <span aria-hidden>👤</span>
-            <span>Referee TBC</span>
+            <span>{match.referee_name ?? "Referee TBC"}</span>
           </div>
         </div>
 
@@ -121,13 +123,104 @@ export default async function MatchDetailPage({
         {/* Goal scorers */}
         <section className="py-6 border-b border-border">
           <h3 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-3">Goal scorers</h3>
-          <p className="text-sm text-muted">Coming soon</p>
+          {goals.length > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {goals.map((g, i) => (
+                <li key={i} className="flex flex-wrap items-baseline gap-2 text-white">
+                  <span className="font-mono text-muted tabular-nums">{g.minute ?? "?"}{g.injury_time != null ? `+${g.injury_time}` : ""}&apos;</span>
+                  <span>{g.scorer_name}</span>
+                  {g.type === "PENALTY" ? (
+                    <span className="text-xs text-muted">(pen)</span>
+                  ) : null}
+                  {g.assist_name ? (
+                    <span className="text-muted">assist: {g.assist_name}</span>
+                  ) : null}
+                  <span className="text-muted">— {g.score_home}-{g.score_away}</span>
+                </li>
+              ))}
+            </ul>
+          ) : matchFinished ? (
+            <p className="text-sm text-muted">No goal data yet</p>
+          ) : (
+            <p className="text-sm text-muted">Coming soon</p>
+          )}
         </section>
 
         {/* Lineups */}
         <section className="py-6 border-b border-border">
           <h3 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-3">Lineups</h3>
-          <p className="text-sm text-muted">Coming soon</p>
+          {lineups.home ?? lineups.away ? (
+            <div className="grid gap-6 sm:grid-cols-2">
+              {lineups.home ? (
+                <div>
+                  <p className="text-xs font-mono text-muted mb-1">{match.home_team_name}</p>
+                  {lineups.home.formation ? (
+                    <p className="text-sm text-muted mb-2">{lineups.home.formation}</p>
+                  ) : null}
+                  {lineups.home.coach_name ? (
+                    <p className="text-sm text-muted mb-3">Coach: {lineups.home.coach_name}</p>
+                  ) : null}
+                  <ul className="space-y-1 text-sm text-white">
+                    {lineups.home.lineup.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="font-mono text-muted w-6">{p.shirtNumber ?? "—"}</span>
+                        <span>{p.name}</span>
+                        {p.position ? <span className="text-muted truncate">{p.position}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                  {lineups.home.bench.length > 0 ? (
+                    <>
+                      <p className="text-xs font-mono text-muted mt-3 mb-1">Bench</p>
+                      <ul className="space-y-1 text-sm text-muted">
+                        {lineups.home.bench.map((p, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="font-mono w-6">{p.shirtNumber ?? "—"}</span>
+                            <span>{p.name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+              {lineups.away ? (
+                <div>
+                  <p className="text-xs font-mono text-muted mb-1">{match.away_team_name}</p>
+                  {lineups.away.formation ? (
+                    <p className="text-sm text-muted mb-2">{lineups.away.formation}</p>
+                  ) : null}
+                  {lineups.away.coach_name ? (
+                    <p className="text-sm text-muted mb-3">Coach: {lineups.away.coach_name}</p>
+                  ) : null}
+                  <ul className="space-y-1 text-sm text-white">
+                    {lineups.away.lineup.map((p, i) => (
+                      <li key={i} className="flex gap-2">
+                        <span className="font-mono text-muted w-6">{p.shirtNumber ?? "—"}</span>
+                        <span>{p.name}</span>
+                        {p.position ? <span className="text-muted truncate">{p.position}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                  {lineups.away.bench.length > 0 ? (
+                    <>
+                      <p className="text-xs font-mono text-muted mt-3 mb-1">Bench</p>
+                      <ul className="space-y-1 text-sm text-muted">
+                        {lineups.away.bench.map((p, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="font-mono w-6">{p.shirtNumber ?? "—"}</span>
+                            <span>{p.name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">Lineups not available</p>
+          )}
         </section>
 
         {/* Watch / highlights */}

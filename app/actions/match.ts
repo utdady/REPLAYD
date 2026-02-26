@@ -11,6 +11,8 @@ export interface MatchByIdRow {
   stage: string | null;
   home_score: number | null;
   away_score: number | null;
+  venue: string | null;
+  referee_name: string | null;
   competition_name: string;
   competition_code: string;
   emblem_url: string | null;
@@ -22,6 +24,33 @@ export interface MatchByIdRow {
   away_team_name: string;
   away_crest_url: string | null;
   [key: string]: unknown;
+}
+
+export interface MatchGoalRow {
+  minute: number | null;
+  injury_time: number | null;
+  type: string;
+  team_id: number;
+  scorer_name: string;
+  assist_name: string | null;
+  score_home: number;
+  score_away: number;
+}
+
+export interface MatchLineupPlayer {
+  id: number;
+  name: string;
+  position: string | null;
+  shirtNumber: number | null;
+}
+
+export interface MatchTeamDetailRow {
+  side: "home" | "away";
+  team_id: number;
+  formation: string | null;
+  coach_name: string | null;
+  lineup: MatchLineupPlayer[];
+  bench: MatchLineupPlayer[];
 }
 
 export async function getMatchById(id: string): Promise<MatchByIdRow | null> {
@@ -37,6 +66,8 @@ export async function getMatchById(id: string): Promise<MatchByIdRow | null> {
       m.stage,
       m.home_score,
       m.away_score,
+      m.venue,
+      m.referee_name,
       c.name AS competition_name,
       c.code AS competition_code,
       c.emblem_url,
@@ -56,6 +87,63 @@ export async function getMatchById(id: string): Promise<MatchByIdRow | null> {
   `;
   const { rows } = await query<MatchByIdRow>(sql, [matchId]);
   return rows[0] ?? null;
+}
+
+export async function getMatchGoals(matchId: string): Promise<MatchGoalRow[]> {
+  const id = parseInt(matchId, 10);
+  if (Number.isNaN(id)) return [];
+  const { rows } = await query<MatchGoalRow>(
+    `SELECT minute, injury_time, type, team_id, scorer_name, assist_name, score_home, score_away
+     FROM match_goals WHERE match_id = $1 ORDER BY sort_order ASC`,
+    [id]
+  );
+  return rows;
+}
+
+export async function getMatchLineups(matchId: string): Promise<{
+  home: MatchTeamDetailRow | null;
+  away: MatchTeamDetailRow | null;
+}> {
+  const id = parseInt(matchId, 10);
+  if (Number.isNaN(id)) return { home: null, away: null };
+  const { rows } = await query<{
+    side: string;
+    team_id: number;
+    formation: string | null;
+    coach_name: string | null;
+    lineup: unknown;
+    bench: unknown;
+  }>(
+    `SELECT side, team_id, formation, coach_name, lineup, bench
+     FROM match_team_details WHERE match_id = $1`,
+    [id]
+  );
+  const parsePlayers = (raw: unknown): MatchLineupPlayer[] => {
+    if (Array.isArray(raw)) {
+      return raw.map((p: { id?: number; name?: string; position?: string | null; shirtNumber?: number | null }) => ({
+        id: p.id ?? 0,
+        name: p.name ?? "",
+        position: p.position ?? null,
+        shirtNumber: p.shirtNumber ?? null,
+      }));
+    }
+    return [];
+  };
+  let home: MatchTeamDetailRow | null = null;
+  let away: MatchTeamDetailRow | null = null;
+  for (const r of rows) {
+    const row: MatchTeamDetailRow = {
+      side: r.side as "home" | "away",
+      team_id: r.team_id,
+      formation: r.formation,
+      coach_name: r.coach_name,
+      lineup: parsePlayers(r.lineup),
+      bench: parsePlayers(r.bench),
+    };
+    if (r.side === "home") home = row;
+    else away = row;
+  }
+  return { home, away };
 }
 
 export interface LogForMatchRow {

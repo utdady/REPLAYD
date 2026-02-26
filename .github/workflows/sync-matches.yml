@@ -2,9 +2,8 @@ name: Sync Matches
 
 on:
   schedule:
-    # Every 6 hours. Adjust to taste — free tier allows it fine.
-    # 06:00, 12:00, 18:00, 00:00 UTC
-    - cron: "0 0,6,12,18 * * *"
+    # Once per day at 06:00 UTC. Frees API headroom for match-detail sync (venue, referee, goals, lineups).
+    - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -66,6 +65,8 @@ jobs:
           DEBUG:                   ${{ github.event.inputs.debug || 'false' }}
           SYNC_DAYS_BACK:          ${{ github.event.inputs.days_back || '7' }}
           SYNC_DAYS_AHEAD:         ${{ github.event.inputs.days_ahead || '14' }}
+          SYNC_MATCH_DETAILS:      "true"
+          SYNC_DETAILS_CAP:        "150"
         run: npx tsx scripts/sync-matches.ts
 
       - name: Notify on failure

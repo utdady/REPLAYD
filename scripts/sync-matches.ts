@@ -9,9 +9,11 @@
  *   DATABASE_URL, FOOTBALL_DATA_API_KEY
  *
  * Optional:
- *   SYNC_SEASON      (default: 2024) — season year to sync (2024 = 2024/25)
- *   DRY_RUN          (default: false)
- *   DEBUG            (default: false)
+ *   SYNC_SEASON         (default: 2025) — season year to sync
+ *   SYNC_MATCH_DETAILS  (default: true) — fetch venue, referee, goals, lineups per match (rate-limited)
+ *   SYNC_DETAILS_CAP    (default: 150)  — max match-detail API calls per run (incremental backfill)
+ *   DRY_RUN             (default: false)
+ *   DEBUG               (default: false)
  */
 
 import { config } from "dotenv";
@@ -37,6 +39,9 @@ const COMPETITION_IDS = [2021, 2014, 2002, 2019, 2015, 2001];
 
 // Free tier: 10 req/min → sleep 6.5s between calls to be safe
 const RATE_LIMIT_MS = 6_500;
+
+const SYNC_MATCH_DETAILS = process.env.SYNC_MATCH_DETAILS !== "false";
+const SYNC_DETAILS_CAP = Math.max(0, parseInt(process.env.SYNC_DETAILS_CAP ?? "150", 10));
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -106,6 +111,47 @@ interface FDTeamsResponse {
   };
 }
 
+// Single-match response (GET /matches/{id}) — venue, referee, goals, lineups
+interface FDReferee {
+  id: number;
+  name: string;
+  type: string;
+  nationality: string | null;
+}
+
+interface FDGoal {
+  minute: number | null;
+  injuryTime: number | null;
+  type: string;
+  team: { id: number; name: string };
+  scorer: { id: number; name: string } | null;
+  assist: { id: number; name: string } | null;
+  score: { home: number; away: number };
+}
+
+interface FDLineupPlayer {
+  id: number;
+  name: string;
+  position: string | null;
+  shirtNumber: number | null;
+}
+
+interface FDTeamDetail extends FDTeam {
+  formation: string | null;
+  coach?: { id: number; name: string; nationality?: string } | null;
+  lineup?: FDLineupPlayer[];
+  bench?: FDLineupPlayer[];
+}
+
+interface FDMatchDetail {
+  id: number;
+  venue: string | null;
+  referees: FDReferee[] | null;
+  goals: FDGoal[] | null;
+  homeTeam: FDTeamDetail;
+  awayTeam: FDTeamDetail;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function log(...args: unknown[]) {
@@ -146,6 +192,10 @@ async function apiFetch<T>(path: string): Promise<T> {
 // ── DB helpers ────────────────────────────────────────────────────────────────
 
 async function upsertTeam(pool: Pool, t: FDTeam) {
+  if (t.id == null || t.id === undefined) {
+    debug("Skip upsertTeam: missing id", t.name);
+    return;
+  }
   if (DRY_RUN) { debug("DRY upsertTeam", t.id, t.name); return; }
   await pool.query(
     `INSERT INTO teams (id, name, short_name, tla, crest_url)
@@ -270,6 +320,92 @@ async function linkTeamToSeason(
   );
 }
 
+async function upsertMatchDetail(pool: Pool, d: FDMatchDetail) {
+  if (DRY_RUN) {
+    debug("DRY upsertMatchDetail", d.id, d.venue, d.goals?.length ?? 0);
+    return;
+  }
+  const refereeName =
+    d.referees?.find((r) => r.type === "REFEREE")?.name ?? null;
+
+  await pool.query(
+    `UPDATE matches SET venue = $1, referee_name = $2, updated_at = NOW() WHERE id = $3`,
+    [d.venue ?? null, refereeName, d.id]
+  );
+
+  await pool.query(`DELETE FROM match_goals WHERE match_id = $1`, [d.id]);
+  const goals = d.goals ?? [];
+  for (let i = 0; i < goals.length; i++) {
+    const g = goals[i];
+    const teamId = g.team?.id;
+    if (teamId == null) continue;
+    const scoreHome = g.score?.home ?? 0;
+    const scoreAway = g.score?.away ?? 0;
+    await pool.query(
+      `INSERT INTO match_goals (
+         match_id, sort_order, minute, injury_time, type, team_id,
+         scorer_name, scorer_id, assist_name, assist_id, score_home, score_away
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [
+        d.id,
+        i,
+        g.minute ?? null,
+        g.injuryTime ?? null,
+        g.type ?? "REGULAR",
+        teamId,
+        g.scorer?.name ?? "Unknown",
+        g.scorer?.id ?? null,
+        g.assist?.name ?? null,
+        g.assist?.id ?? null,
+        scoreHome,
+        scoreAway,
+      ]
+    );
+  }
+
+  const lineupJson = (arr: FDLineupPlayer[] | undefined) =>
+    JSON.stringify(arr ?? []);
+  const homeLineup = lineupJson(d.homeTeam?.lineup);
+  const homeBench = lineupJson(d.homeTeam?.bench);
+  const awayLineup = lineupJson(d.awayTeam?.lineup);
+  const awayBench = lineupJson(d.awayTeam?.bench);
+
+  await pool.query(
+    `INSERT INTO match_team_details (match_id, team_id, side, formation, coach_name, lineup, bench)
+     VALUES ($1,$2,'home',$3,$4,$5::jsonb,$6::jsonb)
+     ON CONFLICT (match_id, team_id) DO UPDATE SET
+       formation = EXCLUDED.formation,
+       coach_name = EXCLUDED.coach_name,
+       lineup = EXCLUDED.lineup,
+       bench = EXCLUDED.bench`,
+    [
+      d.id,
+      d.homeTeam.id,
+      d.homeTeam.formation ?? null,
+      d.homeTeam.coach?.name ?? null,
+      homeLineup,
+      homeBench,
+    ]
+  );
+  await pool.query(
+    `INSERT INTO match_team_details (match_id, team_id, side, formation, coach_name, lineup, bench)
+     VALUES ($1,$2,'away',$3,$4,$5::jsonb,$6::jsonb)
+     ON CONFLICT (match_id, team_id) DO UPDATE SET
+       formation = EXCLUDED.formation,
+       coach_name = EXCLUDED.coach_name,
+       lineup = EXCLUDED.lineup,
+       bench = EXCLUDED.bench`,
+    [
+      d.id,
+      d.awayTeam.id,
+      d.awayTeam.formation ?? null,
+      d.awayTeam.coach?.name ?? null,
+      awayLineup,
+      awayBench,
+    ]
+  );
+}
+
 // ── Per-competition sync ───────────────────────────────────────────────────────
 
 async function syncCompetition(pool: Pool, competitionId: number) {
@@ -307,13 +443,21 @@ async function syncCompetition(pool: Pool, competitionId: number) {
   log(`   Found ${matchData.matches.length} matches for season ${SYNC_SEASON}`);
 
   let upserted = 0;
+  let skipped = 0;
   for (const m of matchData.matches) {
+    // Cup draws can have TBD teams with no id — skip those matches
+    if (m.homeTeam?.id == null || m.awayTeam?.id == null) {
+      debug("Skip match: missing team id", m.id, m.homeTeam?.name, "vs", m.awayTeam?.name);
+      skipped++;
+      continue;
+    }
     // Ensure both teams exist (cup competitions may have new teams mid-sync)
     await upsertTeam(pool, m.homeTeam);
     await upsertTeam(pool, m.awayTeam);
     await upsertMatch(pool, m, competitionId, seasonId);
     upserted++;
   }
+  if (skipped > 0) log(`   Skipped ${skipped} matches (TBD teams)`);
 
   log(`   ✓ ${upserted} matches synced`);
 
@@ -395,6 +539,38 @@ async function main() {
         await sleep(RATE_LIMIT_MS);
       }
     }
+
+    // Optional: backfill match details (venue, referee, goals, lineups) — incremental, capped
+    if (SYNC_MATCH_DETAILS && SYNC_DETAILS_CAP > 0 && !DRY_RUN) {
+      const { rows: matchRows } = await pool.query<{ id: number }>(
+        `SELECT m.id FROM matches m
+         WHERE m.venue IS NULL
+            OR (m.status = 'FINISHED' AND NOT EXISTS (SELECT 1 FROM match_goals g WHERE g.match_id = m.id))
+         ORDER BY m.utc_date DESC NULLS LAST
+         LIMIT $1`,
+        [SYNC_DETAILS_CAP]
+      );
+      const matchIds = matchRows.map((r) => r.id);
+      if (matchIds.length > 0) {
+        log(`── Match details: fetching ${matchIds.length} matches (cap ${SYNC_DETAILS_CAP})`);
+        let done = 0;
+        for (const matchId of matchIds) {
+          try {
+            const detail = await apiFetch<FDMatchDetail>(`/matches/${matchId}`);
+            await sleep(RATE_LIMIT_MS);
+            await upsertMatchDetail(pool, detail);
+            done++;
+            if (done % 25 === 0) log(`   ${done}/${matchIds.length} details synced`);
+          } catch (err) {
+            log(`   ⚠ Failed to fetch detail for match ${matchId}:`, err);
+          }
+        }
+        log(`   ✓ ${done} match details synced`);
+      }
+    } else if (SYNC_MATCH_DETAILS && SYNC_DETAILS_CAP > 0 && DRY_RUN) {
+      log("── Match details: skipped (DRY_RUN)");
+    }
+
     log("✓ Sync complete");
   } finally {
     await pool.end();
