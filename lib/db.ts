@@ -33,7 +33,7 @@ function getPool(): Pool {
 export const pool = getPool();
 
 /** Run a query with named columns only (no SELECT *). */
-export async function query<T extends Record<string, unknown>>(
+export async function query<T extends object>(
   text: string,
   values?: unknown[]
 ): Promise<{ rows: T[]; rowCount: number }> {

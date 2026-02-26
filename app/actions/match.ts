@@ -35,6 +35,7 @@ export interface MatchGoalRow {
   assist_name: string | null;
   score_home: number;
   score_away: number;
+  [key: string]: unknown;
 }
 
 export interface MatchLineupPlayer {
