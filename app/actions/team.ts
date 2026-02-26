@@ -97,6 +97,7 @@ export interface TeamFormMatchRow {
   away_team_id: number;
   home_score: number | null;
   away_score: number | null;
+  opponent_crest_url: string | null;
   [key: string]: unknown;
 }
 
@@ -135,7 +136,8 @@ export async function getTeamOverview(
     ),
     query<TeamFormMatchRow & { home_score: number | null; away_score: number | null }>(
       `SELECT m.id AS match_id, m.utc_date::text AS utc_date,
-              m.home_team_id, m.away_team_id, m.home_score, m.away_score
+              m.home_team_id, m.away_team_id, m.home_score, m.away_score,
+              (CASE WHEN m.home_team_id = $1 THEN at.crest_url ELSE ht.crest_url END) AS opponent_crest_url
        ${joinClause}
        WHERE ${teamMatchWhere} AND m.status = 'FINISHED'
        ORDER BY m.utc_date DESC LIMIT 5`,
@@ -315,4 +317,96 @@ export async function getTeamTableRows(
   `;
   const { rows } = await query<TeamTableRow>(sql, [teamId, seasonYear]);
   return rows;
+}
+
+export interface TeamStandingRow {
+  team_id: number;
+  team_name: string;
+  short_name: string | null;
+  tla: string | null;
+  crest_url: string | null;
+  position: number;
+  played_games: number;
+  won: number;
+  draw: number;
+  lost: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
+  points: number;
+  form: string | null;
+  is_highlight: boolean;
+  [key: string]: unknown;
+}
+
+export interface TeamTableFull {
+  competition_id: number;
+  competition_name: string;
+  competition_code: string;
+  rows: TeamStandingRow[];
+}
+
+/** Returns full standings table per competition for competitions the team is in this season. */
+export async function getTeamTablesFull(
+  teamId: number,
+  seasonYear: number
+): Promise<TeamTableFull[]> {
+  const compsSql = `
+    SELECT DISTINCT c.id AS competition_id, c.name AS competition_name, c.code AS competition_code
+    FROM standings st
+    JOIN competitions c ON c.id = st.competition_id
+    JOIN seasons s ON s.id = st.season_id
+    WHERE st.team_id = $1 AND s.year = $2
+    ORDER BY c.name ASC
+  `;
+  const { rows: comps } = await query<{ competition_id: number; competition_name: string; competition_code: string }>(
+    compsSql,
+    [teamId, seasonYear]
+  );
+  if (comps.length === 0) return [];
+
+  const fullSql = `
+    SELECT
+      c.id AS competition_id,
+      t.id AS team_id,
+      t.name AS team_name,
+      t.short_name,
+      t.tla,
+      t.crest_url,
+      st.position,
+      st.played_games,
+      st.won,
+      st.draw,
+      st.lost,
+      st.goals_for,
+      st.goals_against,
+      st.goal_difference,
+      st.points,
+      st.form,
+      (t.id = $1) AS is_highlight
+    FROM standings st
+    JOIN competitions c ON c.id = st.competition_id
+    JOIN seasons s ON s.id = st.season_id
+    JOIN teams t ON t.id = st.team_id
+    WHERE c.id = ANY($2::int[]) AND s.year = $3
+    ORDER BY c.name ASC, st.position ASC
+  `;
+  const compIds = comps.map((c) => c.competition_id);
+  const { rows: allRows } = await query<TeamStandingRow & { competition_id: number }>(fullSql, [
+    teamId,
+    compIds,
+    seasonYear,
+  ]);
+  const byComp = new Map<number, TeamStandingRow[]>();
+  for (const row of allRows) {
+    const { competition_id: cid, ...rest } = row;
+    if (!byComp.has(cid)) byComp.set(cid, []);
+    byComp.get(cid)!.push(rest as TeamStandingRow);
+  }
+  return comps.map((c) => ({
+    competition_id: c.competition_id,
+    competition_name: c.competition_name,
+    competition_code: c.competition_code,
+    rows: byComp.get(c.competition_id) ?? [],
+  }));
 }

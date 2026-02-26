@@ -7,12 +7,13 @@ import { format } from "date-fns";
 import {
   getTeamOverview,
   getTeamMatches,
-  getTeamTableRows,
+  getTeamTablesFull,
   toggleFavoriteTeam,
   type TeamRow,
   type TeamOverviewResult,
   type TeamMatchRow,
-  type TeamTableRow,
+  type TeamTableFull,
+  type TeamStandingRow,
 } from "@/app/actions/team";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,22 @@ const CODE_TO_LABEL: Record<string, string> = {
   SA: "Serie A",
   FL1: "L1",
 };
+
+function renderFormDots(form: string | null) {
+  if (!form) return null;
+  return (
+    <div className="flex gap-1 justify-center">
+      {form.split(",").slice(-5).map((r, i) => (
+        <span
+          key={i}
+          className={`w-2 h-2 rounded-full shrink-0 ${
+            r.trim() === "W" ? "bg-green" : r.trim() === "D" ? "bg-yellow-400" : "bg-[#f43f5e]"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
 
 type TabId = "overview" | "matches" | "table" | "stats" | "squad";
 
@@ -50,7 +67,7 @@ export function TeamPageClient({
   const [favorited, setFavorited] = React.useState(initialFavorited);
   const [overview, setOverview] = React.useState<TeamOverviewResult | null>(null);
   const [matches, setMatches] = React.useState<TeamMatchRow[] | null>(null);
-  const [tableRows, setTableRows] = React.useState<TeamTableRow[] | null>(null);
+  const [tableFull, setTableFull] = React.useState<TeamTableFull[] | null>(null);
   const [loadingOverview, setLoadingOverview] = React.useState(false);
   const [loadingMatches, setLoadingMatches] = React.useState(false);
   const [loadingTable, setLoadingTable] = React.useState(false);
@@ -85,8 +102,8 @@ export function TeamPageClient({
   React.useEffect(() => {
     if (tab === "table") {
       setLoadingTable(true);
-      getTeamTableRows(teamId, season)
-        .then(setTableRows)
+      getTeamTablesFull(teamId, season)
+        .then(setTableFull)
         .finally(() => setLoadingTable(false));
     }
   }, [tab, teamId, season]);
@@ -165,22 +182,47 @@ export function TeamPageClient({
                     <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-2">Next match</h2>
                     <Link
                       href={`/matches/${overview.nextMatch.id}`}
-                      className="block p-4 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors"
+                      className="block p-3.5 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors"
                     >
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-sm text-muted">
-                          {format(new Date(overview.nextMatch.utc_date), "EEE, MMM d")}
-                        </span>
-                        <Badge>{CODE_TO_LABEL[overview.nextMatch.competition_code] ?? overview.nextMatch.competition_name}</Badge>
-                      </div>
-                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                        <span className="text-sm text-white truncate text-center">{overview.nextMatch.home_team_name}</span>
-                        <span className="text-sm text-muted">
+                      <div className="flex justify-between items-start gap-2 mb-2.5">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge>{CODE_TO_LABEL[overview.nextMatch.competition_code] ?? overview.nextMatch.competition_name}</Badge>
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-muted">
+                              {season}/{String(season + 1).slice(-2)}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-mono text-muted shrink-0">
+                          {format(new Date(overview.nextMatch.utc_date), "EEE d MMM")}
+                          {" · "}
                           {overview.nextMatch.status === "FINISHED"
                             ? `${overview.nextMatch.home_score}–${overview.nextMatch.away_score}`
                             : format(new Date(overview.nextMatch.utc_date), "HH:mm")}
                         </span>
-                        <span className="text-sm text-white truncate text-center">{overview.nextMatch.away_team_name}</span>
+                      </div>
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {overview.nextMatch.home_crest_url ? (
+                            <img src={overview.nextMatch.home_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" />
+                          ) : (
+                            <div className="w-6 h-6 rounded bg-surface3 shrink-0" />
+                          )}
+                          <span className="truncate text-sm font-sans text-white">{overview.nextMatch.home_team_name}</span>
+                        </div>
+                        <MatchScore
+                          home={overview.nextMatch.home_score}
+                          away={overview.nextMatch.away_score}
+                          scheduled={overview.nextMatch.status !== "FINISHED"}
+                        />
+                        <div className="flex items-center gap-2 min-w-0 justify-end">
+                          <span className="truncate text-sm font-sans text-white text-right">{overview.nextMatch.away_team_name}</span>
+                          {overview.nextMatch.away_crest_url ? (
+                            <img src={overview.nextMatch.away_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" />
+                          ) : (
+                            <div className="w-6 h-6 rounded bg-surface3 shrink-0" />
+                          )}
+                        </div>
                       </div>
                     </Link>
                   </section>
@@ -188,18 +230,35 @@ export function TeamPageClient({
                 {overview.form.length > 0 && (
                   <section>
                     <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-2">Team form</h2>
-                    <div className="flex gap-2">
-                      {overview.form.map((f, i) => (
-                        <span
-                          key={f.match_id}
-                          className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${
-                            f.result === "W" ? "bg-green/20 text-green" : f.result === "D" ? "bg-yellow-500/20 text-yellow-500" : "bg-red-500/20 text-red-400"
-                          }`}
-                          title={format(new Date(f.utc_date), "EEE d MMM")}
-                        >
-                          {f.result}
-                        </span>
-                      ))}
+                    <div className="flex gap-3">
+                      {overview.form.map((f) => {
+                        const isHome = f.home_team_id === teamId;
+                        const ourScore = isHome ? f.home_score : f.away_score;
+                        const oppScore = isHome ? f.away_score : f.home_score;
+                        const scoreLabel = [ourScore ?? "-", oppScore ?? "-"].join(" – ");
+                        const chipGreen = f.result === "W" || f.result === "L";
+                        return (
+                          <Link
+                            key={f.match_id}
+                            href={`/matches/${f.match_id}`}
+                            className="flex flex-col items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+                          >
+                            <span
+                              className={`min-w-[3rem] px-2 py-1 rounded flex items-center justify-center text-xs font-bold text-white ${
+                                chipGreen ? "bg-green" : "bg-surface3 text-muted"
+                              }`}
+                              title={format(new Date(f.utc_date), "EEE d MMM")}
+                            >
+                              {scoreLabel}
+                            </span>
+                            {f.opponent_crest_url ? (
+                              <img src={f.opponent_crest_url} alt="" className="w-8 h-8 object-contain" />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-surface3" />
+                            )}
+                          </Link>
+                        );
+                      })}
                     </div>
                   </section>
                 )}
@@ -267,60 +326,69 @@ export function TeamPageClient({
                   const idx = matches.findIndex((m) => new Date(m.utc_date).getTime() >= now);
                   return idx >= 0 ? idx : matches.length - 1;
                 })();
+                const scheduled = (m: TeamMatchRow) => m.status !== "FINISHED" && m.status !== "IN_PLAY" && m.status !== "PAUSED";
+                const byDate = matches.reduce<Record<string, TeamMatchRow[]>>((acc, m) => {
+                  const key = format(new Date(m.utc_date), "yyyy-MM-dd");
+                  if (!acc[key]) acc[key] = [];
+                  acc[key].push(m);
+                  return acc;
+                }, {});
+                const dateKeys = Object.keys(byDate).sort();
                 return (
-              <div className="space-y-3">
-                {matches.map((m, i) => (
-                    <div key={m.id} ref={i === currentIndex ? currentMatchRef : undefined}>
-                      <Link href={`/matches/${m.id}`}>
-                        <article className="bg-surface2 border border-border rounded-card p-3.5 hover:border-border2 transition-colors">
-                          <div className="flex justify-between items-start gap-2 mb-2">
-                            <span className="text-xs font-mono text-muted">
-                              {format(new Date(m.utc_date), "EEE, MMM d")}
-                              {new Date(m.utc_date) >= new Date() && ` · ${format(new Date(m.utc_date), "HH:mm")}`}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <Badge>{CODE_TO_LABEL[m.competition_code] ?? m.competition_name}</Badge>
-                              {m.watched && (
-                                <span className="text-[10px] font-mono text-green uppercase">Watched</span>
-                              )}
-                            </div>
+              <div className="space-y-6">
+                {dateKeys.map((dateKey) => (
+                  <section key={dateKey}>
+                    <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-2">
+                      {format(new Date(dateKey), "EEE, MMM d")}
+                    </h2>
+                    <div className="space-y-3">
+                      {byDate[dateKey].map((m) => {
+                        const isScheduled = scheduled(m);
+                        const scoreBox = isScheduled ? (
+                          <span className="inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded bg-green text-white font-display text-lg font-bold" style={{ letterSpacing: "0.02em" }}>
+                            VS
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded bg-green text-white font-display text-lg font-bold" style={{ letterSpacing: "0.02em" }}>
+                            {m.home_score ?? 0} – {m.away_score ?? 0}
+                          </span>
+                        );
+                        return (
+                          <div key={m.id} ref={matches.indexOf(m) === currentIndex ? currentMatchRef : undefined}>
+                            <Link href={`/matches/${m.id}`}>
+                              <article className="bg-surface2 border border-border rounded-card p-3.5 hover:border-border2 transition-colors">
+                                <div className="flex justify-between items-start gap-2 mb-2.5">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <Badge>{CODE_TO_LABEL[m.competition_code] ?? m.competition_name}</Badge>
+                                      {m.watched && (
+                                        <span className="text-[10px] font-mono text-green uppercase">Watched</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <span className="text-sm font-mono text-muted shrink-0">
+                                    {format(new Date(m.utc_date), "EEE, MMM d")}
+                                    {new Date(m.utc_date) >= new Date() && ` · ${format(new Date(m.utc_date), "HH:mm")}`}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="truncate text-sm font-sans text-white">{m.home_team_name}</span>
+                                    {m.home_crest_url ? <img src={m.home_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" /> : <div className="w-6 h-6 rounded bg-surface3 shrink-0" />}
+                                  </div>
+                                  {scoreBox}
+                                  <div className="flex items-center gap-2 min-w-0 justify-end">
+                                    {m.away_crest_url ? <img src={m.away_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" /> : <div className="w-6 h-6 rounded bg-surface3 shrink-0" />}
+                                    <span className="truncate text-sm font-sans text-white text-right">{m.away_team_name}</span>
+                                  </div>
+                                </div>
+                              </article>
+                            </Link>
                           </div>
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {m.home_team_id === teamId ? (
-                                <>
-                                  {m.home_crest_url ? <img src={m.home_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" /> : <div className="w-6 h-6 rounded bg-surface3 shrink-0" />}
-                                  <span className="text-sm text-white truncate">{m.home_team_name}</span>
-                                </>
-                              ) : (
-                                <>
-                                  {m.away_crest_url ? <img src={m.away_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" /> : <div className="w-6 h-6 rounded bg-surface3 shrink-0" />}
-                                  <span className="text-sm text-white truncate">{m.opponent_name}</span>
-                                </>
-                              )}
-                            </div>
-                            <MatchScore
-                              home={m.home_score}
-                              away={m.away_score}
-                              scheduled={m.status !== "FINISHED" && m.status !== "IN_PLAY" && m.status !== "PAUSED"}
-                            />
-                            <div className="flex items-center gap-2 min-w-0 justify-end">
-                              {m.away_team_id === teamId ? (
-                                <>
-                                  <span className="text-sm text-white truncate text-right">{m.away_team_name}</span>
-                                  {m.away_crest_url ? <img src={m.away_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" /> : <div className="w-6 h-6 rounded bg-surface3 shrink-0" />}
-                                </>
-                              ) : (
-                                <>
-                                  <span className="text-sm text-white truncate text-right">{m.opponent_name}</span>
-                                  {m.opponent_crest_url ? <img src={m.opponent_crest_url} alt="" className="w-6 h-6 object-contain shrink-0" /> : <div className="w-6 h-6 rounded bg-surface3 shrink-0" />}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </article>
-                      </Link>
+                        );
+                      })}
                     </div>
+                  </section>
                 ))}
               </div>
                 );
@@ -347,29 +415,64 @@ export function TeamPageClient({
             </div>
             {loadingTable ? (
               <p className="text-sm text-muted">Loading table…</p>
-            ) : tableRows && tableRows.length > 0 ? (
-              <div className="space-y-6">
-                {tableRows.map((row) => (
-                  <section key={row.competition_id}>
-                    <h2 className="text-sm font-mono font-semibold text-muted mb-2">{row.competition_name}</h2>
-                    <div className={`rounded-card border p-3 ${row.is_highlight ? "border-green bg-green/5" : "border-border bg-surface2"}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted font-mono w-6">{row.position}</span>
-                          {row.crest_url ? <img src={row.crest_url} alt="" className="w-6 h-6 object-contain" /> : <div className="w-6 h-6 rounded bg-surface3" />}
-                          <span className="text-white font-medium">{row.team_name}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm">
-                          <span className="text-muted">Pts {row.points}</span>
-                          <span className="text-white">GD {row.goal_difference > 0 ? `+${row.goal_difference}` : row.goal_difference}</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 mt-2 text-xs text-muted font-mono">
-                        <span>P {row.played_games}</span>
-                        <span>W {row.won}</span>
-                        <span>D {row.draw}</span>
-                        <span>L {row.lost}</span>
-                      </div>
+            ) : tableFull && tableFull.length > 0 ? (
+              <div className="space-y-8">
+                {tableFull.map((table) => (
+                  <section key={table.competition_id}>
+                    <h2 className="text-sm font-mono font-semibold text-muted mb-3">{table.competition_name}</h2>
+                    <div className="overflow-x-auto -mx-4 px-4">
+                      <table className="w-full min-w-[560px] text-[.78rem]">
+                        <thead>
+                          <tr className="text-muted font-mono text-[.65rem] tracking-[.08em] uppercase border-b border-border">
+                            <th className="text-left py-2 pr-2 w-8">#</th>
+                            <th className="text-left py-2 pr-2">Team</th>
+                            <th className="text-center py-2 px-1 w-8">P</th>
+                            <th className="text-center py-2 px-1 w-8">W</th>
+                            <th className="text-center py-2 px-1 w-8">D</th>
+                            <th className="text-center py-2 px-1 w-8">L</th>
+                            <th className="text-center py-2 px-1 w-8">GF</th>
+                            <th className="text-center py-2 px-1 w-8">GA</th>
+                            <th className="text-center py-2 px-1 w-10">GD</th>
+                            <th className="text-center py-2 px-1 w-10 font-bold">Pts</th>
+                            <th className="text-center py-2 pl-1 w-16">Form</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {table.rows.map((row: TeamStandingRow) => (
+                            <tr
+                              key={row.team_id}
+                              className={`border-b border-border/50 transition-colors ${
+                                row.is_highlight ? "bg-green/10 border-l-2 border-l-green" : "hover:bg-surface2/50"
+                              }`}
+                            >
+                              <td className="py-2.5 pr-2 text-muted font-mono font-bold">{row.position}</td>
+                              <td className="py-2.5 pr-2">
+                                <Link href={`/teams/${row.team_id}`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                                  {row.crest_url ? (
+                                    <img src={row.crest_url} alt="" className="w-5 h-5 object-contain shrink-0" />
+                                  ) : (
+                                    <div className="w-5 h-5 rounded bg-surface3 shrink-0" />
+                                  )}
+                                  <span className="text-white font-medium truncate max-w-[140px]">
+                                    {row.short_name || row.team_name}
+                                  </span>
+                                </Link>
+                              </td>
+                              <td className="text-center py-2.5 px-1 text-muted">{row.played_games}</td>
+                              <td className="text-center py-2.5 px-1 text-muted">{row.won}</td>
+                              <td className="text-center py-2.5 px-1 text-muted">{row.draw}</td>
+                              <td className="text-center py-2.5 px-1 text-muted">{row.lost}</td>
+                              <td className="text-center py-2.5 px-1 text-muted">{row.goals_for}</td>
+                              <td className="text-center py-2.5 px-1 text-muted">{row.goals_against}</td>
+                              <td className="text-center py-2.5 px-1 text-white font-medium">
+                                {row.goal_difference > 0 ? `+${row.goal_difference}` : row.goal_difference}
+                              </td>
+                              <td className="text-center py-2.5 px-1 text-white font-bold">{row.points}</td>
+                              <td className="py-2.5 pl-1">{renderFormDots(row.form)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </section>
                 ))}
