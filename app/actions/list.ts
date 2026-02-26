@@ -256,6 +256,12 @@ async function ensureSystemListsForUser(userId: string): Promise<SystemListsForU
   };
 }
 
+/** Returns the user's Watched system list id (ensures it exists). For use in team/match queries. */
+export async function getWatchedListIdForUser(userId: string): Promise<string> {
+  const lists = await ensureSystemListsForUser(userId);
+  return lists.watchedListId;
+}
+
 export interface MatchQuickListsState {
   authenticated: boolean;
   liked: boolean;

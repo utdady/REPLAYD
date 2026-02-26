@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { startOfDay, format } from "date-fns";
 import { CompChips } from "@/components/feed/comp-chips";
@@ -185,7 +186,7 @@ export function HomeFeed() {
                       <tr key={row.team_id} className="border-b border-border/50 hover:bg-surface2/50 transition-colors">
                         <td className="py-2.5 pr-2 text-muted font-mono">{row.position}</td>
                         <td className="py-2.5 pr-2">
-                          <div className="flex items-center gap-2">
+                          <Link href={`/teams/${row.team_id}`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                             {row.crest_url ? (
                               <img src={row.crest_url} alt="" className="w-5 h-5 object-contain shrink-0" />
                             ) : (
@@ -194,7 +195,7 @@ export function HomeFeed() {
                             <span className="text-white font-medium truncate max-w-[140px]">
                               {row.short_name || row.team_name}
                             </span>
-                          </div>
+                          </Link>
                         </td>
                         <td className="text-center py-2.5 px-1 text-muted">{row.played_games}</td>
                         <td className="text-center py-2.5 px-1 text-muted">{row.won}</td>

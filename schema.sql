@@ -190,6 +190,14 @@ CREATE TABLE IF NOT EXISTS list_items (
   UNIQUE(list_id, match_id)
 );
 
+-- Favorite teams (multiple per user)
+CREATE TABLE IF NOT EXISTS favorite_teams (
+  user_id   UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  team_id   INTEGER     NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, team_id)
+);
+
 CREATE TABLE IF NOT EXISTS follows (
   follower_id  UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   following_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -216,6 +224,10 @@ CREATE INDEX IF NOT EXISTS idx_logs_rating            ON match_logs(rating) WHER
 
 -- Lists
 CREATE INDEX IF NOT EXISTS idx_list_items_list        ON list_items(list_id, position);
+
+-- Favorite teams
+CREATE INDEX IF NOT EXISTS idx_favorite_teams_user ON favorite_teams(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorite_teams_team ON favorite_teams(team_id);
 
 -- Follows: feed queries
 CREATE INDEX IF NOT EXISTS idx_follows_follower       ON follows(follower_id);
@@ -247,6 +259,7 @@ ALTER TABLE log_likes    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE log_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lists        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE list_items   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE favorite_teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE follows      ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: public read, own write
@@ -289,6 +302,11 @@ CREATE POLICY "list_items_write"     ON list_items FOR ALL USING (
 CREATE POLICY "follows_select_all"   ON follows FOR SELECT USING (true);
 CREATE POLICY "follows_insert_own"   ON follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
 CREATE POLICY "follows_delete_own"   ON follows FOR DELETE USING (auth.uid() = follower_id);
+
+-- Favorite teams: own read/write only
+CREATE POLICY "favorite_teams_select_own" ON favorite_teams FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "favorite_teams_insert_own" ON favorite_teams FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "favorite_teams_delete_own" ON favorite_teams FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================================
 -- FUNCTIONS & TRIGGERS
