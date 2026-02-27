@@ -1,9 +1,6 @@
-name: Sync Matches
+name: Sync Matches (backfill)
 
 on:
-  schedule:
-    # Once per day at 06:00 UTC. Frees API headroom for match-detail sync (venue, referee, goals, lineups).
-    - cron: "0 6 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -13,7 +10,7 @@ on:
       days_back:
         description: "Days back to sync"
         required: false
-        default: "7"
+        default: "30"
       days_ahead:
         description: "Days ahead to sync"
         required: false
@@ -22,12 +19,16 @@ on:
         description: "Enable debug logging"
         required: false
         default: "false"
+      details_cap:
+        description: "Max match-detail calls (higher for backfill)"
+        required: false
+        default: "250"
 
 jobs:
   sync:
-    name: Sync from football-data.org
+    name: Sync from football-data.org (backfill)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     permissions:
       contents: read
       issues: write   # for "Notify on failure" step
@@ -57,20 +58,16 @@ jobs:
           fi
           echo "Secrets are configured."
 
-      - name: Run sync
+      - name: Run sync (backfill)
         env:
           DATABASE_URL:            ${{ secrets.DATABASE_URL }}
           FOOTBALL_DATA_API_KEY:   ${{ secrets.FOOTBALL_DATA_API_KEY }}
           DRY_RUN:                 ${{ github.event.inputs.dry_run || 'false' }}
           DEBUG:                   ${{ github.event.inputs.debug || 'false' }}
-          SYNC_DAYS_BACK:          ${{ github.event.inputs.days_back || '7' }}
+          SYNC_DAYS_BACK:          ${{ github.event.inputs.days_back || '30' }}
           SYNC_DAYS_AHEAD:         ${{ github.event.inputs.days_ahead || '14' }}
           SYNC_MATCH_DETAILS:      "true"
-          # Keep the daily scheduled job well under the 30min timeout:
-          #  - each detail call sleeps ~6.5s for rate limiting
-          #  - 75 calls ≈ 8–9 minutes of detail fetch time
-          #  - plus match + standings sync and npm ci stays safely below 30min
-          SYNC_DETAILS_CAP:        "75"
+          SYNC_DETAILS_CAP:        ${{ github.event.inputs.details_cap || '250' }}
         run: npx tsx scripts/sync-matches.ts
 
       - name: Notify on failure
@@ -83,10 +80,11 @@ jobs:
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo:  context.repo.repo,
-                title: `Match sync failed — ${new Date().toISOString().slice(0,10)}`,
+                title: `Match backfill failed — ${new Date().toISOString().slice(0,10)}`,
                 body:  `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
                 labels: ['bug', 'sync']
               });
             } catch (e) {
               console.log('Could not create issue:', e.message);
             }
+

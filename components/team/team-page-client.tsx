@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatchScore } from "@/components/match/match-score";
+import { MatchStatus } from "@/components/match/match-status";
 
 const CODE_TO_LABEL: Record<string, string> = {
   PL: "EPL",
@@ -128,17 +129,31 @@ export function TeamPageClient({
     <div className="min-h-screen pb-24">
       <div className="max-w-2xl mx-auto px-4">
         <header className="flex items-center justify-between gap-4 py-4 border-b border-border">
-          <Link href="/" className="flex items-center gap-2 text-sm font-mono text-muted hover:text-white shrink-0">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-mono text-muted hover:text-white shrink-0"
+          >
             <span aria-hidden>←</span>
             Back
           </Link>
           <Button
             type="button"
-            variant={favorited ? "primary" : "outline"}
-            className="shrink-0"
+            variant="ghost"
+            aria-pressed={favorited}
+            aria-label={favorited ? "Remove team from favourites" : "Add team to favourites"}
             onClick={handleToggleFavorite}
+            className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+              favorited
+                ? "border-yellow-400 text-yellow-300 bg-yellow-400/10"
+                : "border-border text-muted hover:text-yellow-300 hover:border-yellow-300"
+            }`}
           >
-            {favorited ? "Following" : "Follow"}
+            <span className="text-base" aria-hidden>
+              ★
+            </span>
+            <span className="hidden xs:inline text-xs font-mono uppercase tracking-[0.12em]">
+              Favourite
+            </span>
           </Button>
         </header>
 
@@ -193,13 +208,13 @@ export function TeamPageClient({
                             </span>
                           </div>
                         </div>
-                        <span className="text-sm font-mono text-muted shrink-0">
-                          {format(new Date(overview.nextMatch.utc_date), "EEE d MMM")}
-                          {" · "}
-                          {overview.nextMatch.status === "FINISHED"
-                            ? `${overview.nextMatch.home_score}–${overview.nextMatch.away_score}`
-                            : format(new Date(overview.nextMatch.utc_date), "HH:mm")}
-                        </span>
+                        <MatchStatus
+                          time={`${format(new Date(overview.nextMatch.utc_date), "EEE d MMM")} · ${format(
+                            new Date(overview.nextMatch.utc_date),
+                            "HH:mm"
+                          )}`}
+                          className="shrink-0"
+                        />
                       </div>
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                         <div className="flex items-center gap-2 min-w-0">
@@ -230,23 +245,26 @@ export function TeamPageClient({
                 {overview.form.length > 0 && (
                   <section>
                     <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-2">Team form</h2>
-                    <div className="flex gap-3">
+                    <div className="grid grid-cols-5 gap-3 max-w-full">
                       {overview.form.map((f) => {
                         const isHome = f.home_team_id === teamId;
                         const ourScore = isHome ? f.home_score : f.away_score;
                         const oppScore = isHome ? f.away_score : f.home_score;
                         const scoreLabel = [ourScore ?? "-", oppScore ?? "-"].join(" – ");
-                        const chipGreen = f.result === "W" || f.result === "L";
+                        const bgClass =
+                          f.result === "W"
+                            ? "bg-green"
+                            : f.result === "L"
+                            ? "bg-[#f43f5e]"
+                            : "bg-surface3 text-muted";
                         return (
                           <Link
                             key={f.match_id}
                             href={`/matches/${f.match_id}`}
-                            className="flex flex-col items-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+                            className="flex flex-col items-center gap-2 hover:opacity-90 transition-opacity"
                           >
                             <span
-                              className={`min-w-[3rem] px-2 py-1 rounded flex items-center justify-center text-xs font-bold text-white ${
-                                chipGreen ? "bg-green" : "bg-surface3 text-muted"
-                              }`}
+                              className={`min-w-[3rem] px-2 py-1 rounded flex items-center justify-center text-xs font-bold text-white ${bgClass}`}
                               title={format(new Date(f.utc_date), "EEE d MMM")}
                             >
                               {scoreLabel}
@@ -344,13 +362,32 @@ export function TeamPageClient({
                     <div className="space-y-3">
                       {byDate[dateKey].map((m) => {
                         const isScheduled = scheduled(m);
+                        const isHomeTeam = m.home_team_id === teamId;
+                        const ourScore = isHomeTeam ? m.home_score : m.away_score;
+                        const oppScore = isHomeTeam ? m.away_score : m.home_score;
+                        let outcome: "win" | "draw" | "loss" | null = null;
+                        if (!isScheduled && ourScore != null && oppScore != null) {
+                          outcome = ourScore > oppScore ? "win" : ourScore < oppScore ? "loss" : "draw";
+                        }
+                        const baseBoxClass =
+                          "inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded";
+                        const outcomeClass =
+                          outcome === "win"
+                            ? "bg-green text-white"
+                            : outcome === "loss"
+                            ? "bg-[#f43f5e] text-white"
+                            : outcome === "draw"
+                            ? "bg-surface3 text-muted"
+                            : "";
                         const scoreBox = isScheduled ? (
-                          <span className="inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded bg-green text-white font-display text-lg font-bold" style={{ letterSpacing: "0.02em" }}>
-                            VS
-                          </span>
+                          <MatchScore
+                            home={m.home_score}
+                            away={m.away_score}
+                            scheduled
+                          />
                         ) : (
-                          <span className="inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded bg-green text-white font-display text-lg font-bold" style={{ letterSpacing: "0.02em" }}>
-                            {m.home_score ?? 0} – {m.away_score ?? 0}
+                          <span className={`${baseBoxClass} ${outcomeClass}`}>
+                            <MatchScore home={m.home_score} away={m.away_score} />
                           </span>
                         );
                         return (
