@@ -6,6 +6,7 @@ import { getMyProfile } from "@/app/actions/profile";
 import { MatchScore } from "@/components/match/match-score";
 import { MatchLogSheet } from "@/components/match/match-log-sheet";
 import { CommunityLogsSection } from "@/components/match/community-logs-section";
+import { teamSlug } from "@/lib/team-slug";
 
 function statusLabel(status: string): string {
   switch (status) {
@@ -92,7 +93,7 @@ export default async function MatchDetailPage({
         {/* Scoreboard */}
         <section className="py-8 border-b border-border">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-            <Link href={`/teams/${match.home_team_id}`} className="text-center min-w-0 hover:opacity-90 transition-opacity">
+            <Link href={`/teams/${teamSlug(match.home_team_name)}`} className="text-center min-w-0 hover:opacity-90 transition-opacity">
               <p className="font-sans font-medium text-white truncate">{match.home_team_name}</p>
               {match.home_crest_url ? (
                 <img src={match.home_crest_url} alt="" className="w-12 h-12 mx-auto mt-2 object-contain" />
@@ -109,7 +110,7 @@ export default async function MatchDetailPage({
               />
               <p className="text-xs font-mono text-muted mt-2">{statusLabel(match.status)}</p>
             </div>
-            <Link href={`/teams/${match.away_team_id}`} className="text-center min-w-0 hover:opacity-90 transition-opacity">
+            <Link href={`/teams/${teamSlug(match.away_team_name)}`} className="text-center min-w-0 hover:opacity-90 transition-opacity">
               <p className="font-sans font-medium text-white truncate">{match.away_team_name}</p>
               {match.away_crest_url ? (
                 <img src={match.away_crest_url} alt="" className="w-12 h-12 mx-auto mt-2 object-contain" />

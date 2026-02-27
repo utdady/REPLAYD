@@ -15,6 +15,7 @@ import { MatchPoster } from "@/components/match/match-poster";
 import { SectionEyebrow } from "@/components/layout/section-eyebrow";
 import { getMatchesForFeed, getStandings } from "@/app/actions/feed";
 import { FEED_SEASON_YEAR } from "@/lib/feed-constants";
+import { teamSlug } from "@/lib/team-slug";
 
 /** DB competition code → display label for chips/badges */
 const CODE_TO_LABEL: Record<string, string> = {
@@ -186,7 +187,7 @@ export function HomeFeed() {
                       <tr key={row.team_id} className="border-b border-border/50 hover:bg-surface2/50 transition-colors">
                         <td className="py-2.5 pr-2 text-muted font-mono">{row.position}</td>
                         <td className="py-2.5 pr-2">
-                          <Link href={`/teams/${row.team_id}`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                          <Link href={`/teams/${teamSlug(row.team_name)}`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                             {row.crest_url ? (
                               <img src={row.crest_url} alt="" className="w-5 h-5 object-contain shrink-0" />
                             ) : (
@@ -231,12 +232,12 @@ export function HomeFeed() {
                   dateLabel={formatDateLabel(m.utc_date)}
                   time={formatTime(m.utc_date)}
                   home={{
-                    id: String(m.home_team_id),
+                    id: teamSlug(m.home_team_name),
                     name: m.home_team_name,
                     crest: m.home_crest_url ?? undefined,
                   }}
                   away={{
-                    id: String(m.away_team_id),
+                    id: teamSlug(m.away_team_name),
                     name: m.away_team_name,
                     crest: m.away_crest_url ?? undefined,
                   }}

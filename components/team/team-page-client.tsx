@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatchScore } from "@/components/match/match-score";
 import { MatchStatus } from "@/components/match/match-status";
+import { teamSlug } from "@/lib/team-slug";
 
 const CODE_TO_LABEL: Record<string, string> = {
   PL: "EPL",
@@ -128,7 +129,7 @@ export function TeamPageClient({
   return (
     <div className="pt-20 md:pt-24 min-h-screen pb-24">
       <div className="max-w-2xl mx-auto px-4">
-        <header className="flex items-center justify-between gap-4 py-4 border-b border-border">
+        <header className="flex items-center justify-between gap-4 py-2 border-b border-border">
           <Link
             href="/"
             className="flex items-center gap-2 text-sm font-mono text-muted hover:text-white shrink-0"
@@ -157,7 +158,7 @@ export function TeamPageClient({
           </Button>
         </header>
 
-        <div className="flex items-center gap-4 py-6">
+        <div className="flex items-center gap-4 py-4">
           {team.crest_url ? (
             <img src={team.crest_url} alt="" className="w-16 h-16 rounded-full object-contain bg-surface3 shrink-0" />
           ) : (
@@ -486,7 +487,7 @@ export function TeamPageClient({
                             >
                               <td className="py-2.5 pr-2 text-muted font-mono font-bold">{row.position}</td>
                               <td className="py-2.5 pr-2">
-                                <Link href={`/teams/${row.team_id}`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                                <Link href={`/teams/${teamSlug(row.team_name)}`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                                   {row.crest_url ? (
                                     <img src={row.crest_url} alt="" className="w-5 h-5 object-contain shrink-0" />
                                   ) : (

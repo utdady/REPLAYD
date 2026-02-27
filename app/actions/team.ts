@@ -13,12 +13,23 @@ export interface TeamRow {
   [key: string]: unknown;
 }
 
-export async function getTeamById(teamId: string): Promise<TeamRow | null> {
-  const id = parseInt(teamId, 10);
-  if (Number.isNaN(id)) return null;
+export async function getTeamById(identifier: string): Promise<TeamRow | null> {
+  const id = parseInt(identifier, 10);
+  if (!Number.isNaN(id)) {
+    const { rows } = await query<TeamRow>(
+      `SELECT id, name, short_name, tla, crest_url FROM teams WHERE id = $1`,
+      [id]
+    );
+    if (rows[0]) return rows[0];
+  }
+
+  // Fallback: treat identifier as slugified team name, e.g. "borussia-dortmund"
   const { rows } = await query<TeamRow>(
-    `SELECT id, name, short_name, tla, crest_url FROM teams WHERE id = $1`,
-    [id]
+    `SELECT id, name, short_name, tla, crest_url
+     FROM teams
+     WHERE lower(regexp_replace(name, '[^a-z0-9]+', '-', 'g')) = $1
+     LIMIT 1`,
+    [identifier.toLowerCase()]
   );
   return rows[0] ?? null;
 }
