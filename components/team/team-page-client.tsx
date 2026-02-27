@@ -126,7 +126,7 @@ export function TeamPageClient({
   ];
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="pt-20 md:pt-24 min-h-screen pb-24">
       <div className="max-w-2xl mx-auto px-4">
         <header className="flex items-center justify-between gap-4 py-4 border-b border-border">
           <Link
@@ -479,7 +479,9 @@ export function TeamPageClient({
                             <tr
                               key={row.team_id}
                               className={`border-b border-border/50 transition-colors ${
-                                row.is_highlight ? "bg-green/10 border-l-2 border-l-green" : "hover:bg-surface2/50"
+                                row.is_highlight
+                                  ? "bg-surface2/80 border-l-2 border-l-green"
+                                  : "hover:bg-surface2/50"
                               }`}
                             >
                               <td className="py-2.5 pr-2 text-muted font-mono font-bold">{row.position}</td>
