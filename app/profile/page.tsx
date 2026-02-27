@@ -7,6 +7,7 @@ import { getMyProfile, getProfileStats } from "@/app/actions/profile";
 import { getFollowCounts, getFollowersList, getFollowingList } from "@/app/actions/social";
 import { getListsForCurrentUser } from "@/app/actions/list";
 import type { ListSummary } from "@/app/actions/list";
+import { isDevUsername } from "@/lib/follow-the-goat";
 
 type Profile = {
   id: string;
@@ -229,8 +230,13 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <h1 className="font-display text-[2rem] tracking-[.05em] leading-none text-white mb-1">
+          <h1 className="font-display text-[2rem] tracking-[.05em] leading-none text-white mb-1 flex items-center justify-center gap-2 flex-wrap">
             {profile.display_name || profile.username}
+            {isDevUsername(profile.username) && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[.65rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40">
+                DEV
+              </span>
+            )}
           </h1>
           <p className="font-mono text-[.82rem] text-muted tracking-[.04em] mb-5">
             @{profile.username}
