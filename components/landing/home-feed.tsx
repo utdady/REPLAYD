@@ -13,7 +13,7 @@ import { ScrollRow } from "@/components/feed/scroll-row";
 import { MatchCard } from "@/components/match/match-card";
 import { MatchPoster } from "@/components/match/match-poster";
 import { SectionEyebrow } from "@/components/layout/section-eyebrow";
-import { getMatchesForFeed, getStandings } from "@/app/actions/feed";
+import { getMatchesForFeed, getStandings, getPopularMatches, getFriendMatches, type PopularMatchRow, type FriendMatchRow } from "@/app/actions/feed";
 import { FEED_SEASON_YEAR } from "@/lib/feed-constants";
 import { teamSlug } from "@/lib/team-slug";
 
@@ -27,14 +27,6 @@ const CODE_TO_LABEL: Record<string, string> = {
   FL1: "L1",
 };
 
-const POPULAR = [
-  { id: "p1", competition: "EPL", home: { name: "Liverpool", crest: "🔴" }, away: { name: "Man City", crest: "🔵" }, homeScore: 3, awayScore: 2 },
-  { id: "p2", competition: "La Liga", home: { name: "Barcelona", crest: "🔵" }, away: { name: "Real Madrid", crest: "⚪" }, homeScore: 1, awayScore: 1 },
-];
-const FROM_FRIENDS = [
-  { id: "f1", competition: "UCL", home: { name: "Inter", crest: "🔵" }, away: { name: "Atlético", crest: "🔴" }, homeScore: 2, awayScore: 0, friend: { username: "footy_fan", avatarUrl: null } },
-];
-
 const COMPS_WITHOUT_STANDINGS = new Set(["All", "UCL"]);
 
 function formatDateLabel(utcIso: string): string {
@@ -45,6 +37,8 @@ function formatTime(utcIso: string): string {
 }
 
 type StandingRow = Awaited<ReturnType<typeof getStandings>>[number];
+type PopularRow = PopularMatchRow;
+type FriendRow = FriendMatchRow;
 
 export function HomeFeed() {
   const today = startOfDay(new Date());
@@ -59,6 +53,9 @@ export function HomeFeed() {
   const [standings, setStandings] = useState<StandingRow[]>([]);
   const [standingsLoading, setStandingsLoading] = useState(false);
 
+  const [popular, setPopular] = useState<PopularRow[]>([]);
+  const [fromFriends, setFromFriends] = useState<FriendRow[]>([]);
+
   const dateYmd = format(selectedDate, "yyyy-MM-dd");
   const isToday = selectedDate.getTime() === today.getTime();
   const hasStandings = !COMPS_WITHOUT_STANDINGS.has(activeComp);
@@ -70,6 +67,15 @@ export function HomeFeed() {
       .catch(() => setMatches([]))
       .finally(() => setLoading(false));
   }, [dateYmd, activeComp, selectedDate.getTime()]);
+
+  useEffect(() => {
+    getPopularMatches()
+      .then(setPopular)
+      .catch(() => setPopular([]));
+    getFriendMatches()
+      .then(setFromFriends)
+      .catch(() => setFromFriends([]));
+  }, []);
 
   useEffect(() => {
     if (!hasStandings) {
@@ -251,12 +257,12 @@ export function HomeFeed() {
           )}
         </section>
         <ScrollRow title="Popular this week" seeAllHref="/matches?sort=popular">
-          {POPULAR.map((m) => (
+          {popular.map((m) => (
             <MatchPoster key={m.id} id={m.id} competition={m.competition} home={m.home} away={m.away} homeScore={m.homeScore} awayScore={m.awayScore} />
           ))}
         </ScrollRow>
         <ScrollRow title="New from friends" seeAllHref="/community" className="pt-6 pb-12">
-          {FROM_FRIENDS.map((m) => (
+          {fromFriends.map((m) => (
             <MatchPoster key={m.id} id={m.id} competition={m.competition} home={m.home} away={m.away} homeScore={m.homeScore} awayScore={m.awayScore} friend={m.friend} />
           ))}
         </ScrollRow>

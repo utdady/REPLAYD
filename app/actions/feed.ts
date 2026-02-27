@@ -73,6 +73,19 @@ interface FeedMatchRow {
   [key: string]: unknown; // Index signature to satisfy Record<string, unknown>
 }
 
+export interface PopularMatchRow {
+  id: string;
+  competition: string;
+  home: { name: string; crest?: string | null };
+  away: { name: string; crest?: string | null };
+  homeScore: number | null;
+  awayScore: number | null;
+}
+
+export interface FriendMatchRow extends PopularMatchRow {
+  friend: { username: string; avatarUrl?: string | null } | null;
+}
+
 /**
  * Fetch matches from the database for a given date and optional competition filter.
  * Filters by the exact date (UTC), not by season year.
@@ -111,4 +124,41 @@ export async function getMatchesForFeed(
   `;
   const { rows } = await query<FeedMatchRow>(sql, [dateYmd, code]);
   return rows;
+}
+
+/** Demo data for the \"Popular this week\" section. Later we can swap this for a real query. */
+export async function getPopularMatches(): Promise<PopularMatchRow[]> {
+  return [
+    {
+      id: "p1",
+      competition: "EPL",
+      home: { name: "Liverpool", crest: "🔴" },
+      away: { name: "Man City", crest: "🔵" },
+      homeScore: 3,
+      awayScore: 2,
+    },
+    {
+      id: "p2",
+      competition: "La Liga",
+      home: { name: "Barcelona", crest: "🔵" },
+      away: { name: "Real Madrid", crest: "⚪" },
+      homeScore: 1,
+      awayScore: 1,
+    },
+  ];
+}
+
+/** Demo data for the \"New from friends\" section. Later we can swap this for a real query. */
+export async function getFriendMatches(): Promise<FriendMatchRow[]> {
+  return [
+    {
+      id: "f1",
+      competition: "UCL",
+      home: { name: "Inter", crest: "🔵" },
+      away: { name: "Atlético", crest: "🔴" },
+      homeScore: 2,
+      awayScore: 0,
+      friend: { username: "footy_fan", avatarUrl: null },
+    },
+  ];
 }
