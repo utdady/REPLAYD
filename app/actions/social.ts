@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
 import { isFollowTheGoatOn, isDevUsername } from "@/lib/follow-the-goat";
+import { createNotification } from "@/app/actions/notifications";
 
 interface UserSearchResult {
   id: string;
@@ -69,16 +70,24 @@ export async function followUser(targetId: string): Promise<{ success: boolean; 
   if (!user) return { success: false, error: "Not logged in" };
   if (user.id === targetId) return { success: false, error: "Cannot follow yourself" };
 
-  const { rows: targetExists } = await query<{ id: string }>(
+  const { rows: targetRows } = await query<{ id: string }>(
     "SELECT id FROM profiles WHERE id = $1",
     [targetId]
   );
-  if (targetExists.length === 0) return { success: false, error: "User not found" };
+  if (targetRows.length === 0) return { success: false, error: "User not found" };
 
-  await query(
-    "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+  const { rows: inserted } = await query<{ follower_id: string }>(
+    "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING follower_id",
     [user.id, targetId]
   );
+
+  if (inserted.length > 0) {
+    await createNotification({
+      recipientId: targetId,
+      actorId: user.id,
+      type: "follow",
+    });
+  }
 
   revalidatePath("/profile");
   revalidatePath("/search");

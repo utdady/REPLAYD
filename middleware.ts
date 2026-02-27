@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
   // Require login for all other routes
   if (!user) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("error", "Please+log+in+to+continue");
+    loginUrl.searchParams.set("error", "Please log in to continue");
     loginUrl.searchParams.set("next", pathname);
     const redirectRes = NextResponse.redirect(loginUrl);
     response.cookies.getAll().forEach((cookie) => {

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
+import { createNotification } from "@/app/actions/notifications";
 
 export interface MatchByIdRow {
   id: number;
@@ -402,7 +403,25 @@ export async function toggleLogLike(logId: string): Promise<{ ok: true; liked: b
     await query("DELETE FROM log_likes WHERE user_id = $1 AND log_id = $2", [user.id, logId]);
     return { ok: true, liked: false };
   } else {
-    await query("INSERT INTO log_likes (user_id, log_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, logId]);
+    await query("INSERT INTO log_likes (user_id, log_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [
+      user.id,
+      logId,
+    ]);
+
+    const { rows: logOwnerRows } = await query<{ user_id: string }>(
+      "SELECT user_id FROM match_logs WHERE id = $1",
+      [logId]
+    );
+    const recipientId = logOwnerRows[0]?.user_id;
+    if (recipientId && recipientId !== user.id) {
+      await createNotification({
+        recipientId,
+        actorId: user.id,
+        type: "log_like",
+        logId,
+      });
+    }
+
     return { ok: true, liked: true };
   }
 }

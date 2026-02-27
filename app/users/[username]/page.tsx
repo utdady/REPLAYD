@@ -70,6 +70,7 @@ export default function UserProfilePage() {
   const [listUsers, setListUsers] = useState<FollowUser[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [publicLists, setPublicLists] = useState<ListSummary[]>([]);
+  const [activeTab, setActiveTab] = useState<"games" | "reviews" | "lists">("games");
 
   useEffect(() => {
     if (!username) return;
@@ -388,29 +389,86 @@ export default function UserProfilePage() {
           </div>
         </section>
 
-        {/* ── LISTS ────────────────────────────────────────── */}
-        {publicLists.length > 0 && (
-          <section className="mt-10">
-            <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted mb-4">Lists</h2>
-            <div className="space-y-3">
-              {publicLists.map((list) => (
-                <Link
-                  key={list.id}
-                  href={`/lists/${list.id}`}
-                  className="block p-4 rounded-card bg-surface border border-border hover:border-border2 transition-colors"
-                >
-                  <h3 className="font-medium text-white">{list.title}</h3>
-                  {list.description && (
-                    <p className="text-sm text-muted mt-1 line-clamp-2">{list.description}</p>
-                  )}
-                  <p className="text-xs font-mono text-muted mt-2">
-                    {list.item_count} item{list.item_count !== 1 ? "s" : ""}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* ── RUSHMORE (read-only on other profiles) ─────────── */}
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted">Rushmore</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {[1, 2, 3, 4].map((slot) => (
+              <div key={slot} className="min-w-[140px] shrink-0 aspect-square bg-surface2 border border-dashed border-border2 rounded-card flex flex-col items-center justify-center gap-2">
+                <span className="text-2xl opacity-30">+</span>
+                <span className="font-mono text-[.62rem] tracking-[.08em] uppercase text-muted2">Add game</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── STATS (coming soon) ───────────────────────────── */}
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted">Stats</h2>
+          </div>
+          <div className="bg-surface border border-dashed border-border2 rounded-card py-10 px-6 text-center">
+            <div className="text-2xl mb-3 opacity-30">📊</div>
+            <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">Coming Soon</div>
+            <p className="text-[.78rem] text-muted leading-relaxed">Game frequency, rating distribution, favorite teams, and more.</p>
+          </div>
+        </section>
+
+        {/* ── FAVORITES (coming soon) ────────────────────────── */}
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[.9rem] font-semibold tracking-[.02em] text-muted">Favorites</h2>
+          </div>
+          <div className="bg-surface border border-dashed border-border2 rounded-card py-10 px-6 text-center">
+            <div className="text-2xl mb-3 opacity-30">⭐</div>
+            <div className="font-display text-[1.3rem] tracking-[.05em] text-muted2 mb-1">Coming Soon</div>
+            <p className="text-[.78rem] text-muted leading-relaxed">Showcase your favorite players, teams, and clubs across all competitions.</p>
+          </div>
+        </section>
+
+        {/* ── TABS ─────────────────────────────────────────── */}
+        <div className="flex border-b border-border mt-10 mb-6">
+          {(["games", "reviews", "lists"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`relative text-[.78rem] font-medium px-5 py-3 capitalize transition-colors ${activeTab === tab ? "text-white" : "text-muted2 hover:text-muted"}`}
+            >
+              {tab}
+              {activeTab === tab && <span className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-green" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="py-8 text-center text-muted text-[.85rem]">
+          {activeTab === "games" && "Recent game logs will appear here..."}
+          {activeTab === "reviews" && "Reviews will appear here..."}
+          {activeTab === "lists" && (
+            publicLists.length === 0 ? (
+              "Their lists will appear here..."
+            ) : (
+              <div className="text-left space-y-3">
+                {publicLists.map((list) => (
+                  <Link
+                    key={list.id}
+                    href={`/lists/${list.id}`}
+                    className="block p-4 rounded-card bg-surface border border-border hover:border-border2 transition-colors"
+                  >
+                    <h3 className="font-medium text-white">{list.title}</h3>
+                    {list.description && (
+                      <p className="text-sm text-muted mt-1 line-clamp-2">{list.description}</p>
+                    )}
+                    <p className="text-xs font-mono text-muted mt-2">
+                      {list.item_count} item{list.item_count !== 1 ? "s" : ""}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            )
+          )}
+        </div>
 
       </div>
     </div>

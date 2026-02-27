@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
+import { createNotification } from "@/app/actions/notifications";
 
 const LOG_ID_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_BODY = 500;
@@ -199,9 +200,26 @@ export async function createLogComment(
   const sql = `
     INSERT INTO log_comments (log_id, user_id, body)
     VALUES ($1, $2, $3)
+    RETURNING id
   `;
   try {
-    await query(sql, [logId, user.id, bodyFinal]);
+    const { rows } = await query<{ id: string }>(sql, [logId, user.id, bodyFinal]);
+
+    const { rows: logOwnerRows } = await query<{ user_id: string }>(
+      "SELECT user_id FROM match_logs WHERE id = $1",
+      [logId]
+    );
+    const recipientId = logOwnerRows[0]?.user_id;
+    if (recipientId && recipientId !== user.id) {
+      await createNotification({
+        recipientId,
+        actorId: user.id,
+        type: "comment",
+        logId,
+        commentId: rows[0]?.id ?? null,
+      });
+    }
+
     return { ok: true };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to post comment";

@@ -24,7 +24,7 @@ export default function LoginPage() {
       <h1 className="font-display text-2xl tracking-wide text-center mb-6">Log in</h1>
       {error && (
         <div className="mb-4 p-3 rounded-badge bg-red/10 border border-red/30 text-red text-sm font-sans">
-          {decodeURIComponent(error)}
+          {decodeURIComponent(error.replace(/\+/g, " "))}
         </div>
       )}
       <form action={(formData) => {
