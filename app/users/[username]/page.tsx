@@ -12,6 +12,7 @@ import {
   unfollowUser,
 } from "@/app/actions/social";
 import { getMyProfile } from "@/app/actions/profile";
+import { isDevUsername, isFollowTheGoatOn } from "@/lib/follow-the-goat";
 import { getPublicListsByUserId } from "@/app/actions/list";
 import type { ListSummary } from "@/app/actions/list";
 
@@ -122,6 +123,8 @@ export default function UserProfilePage() {
 
   const handleUnfollow = async () => {
     if (!profile || !myId) return;
+    // FOLLOW THE GOAT: do not unfollow dev when feature is on
+    if (isDevUsername(profile.username) && isFollowTheGoatOn()) return;
     setFollowLoading(true);
     const res = await unfollowUser(profile.id);
     if (res.success) {
@@ -130,6 +133,10 @@ export default function UserProfilePage() {
     }
     setFollowLoading(false);
   };
+
+  const isDevProfile = profile ? isDevUsername(profile.username) : false;
+  const followTheGoatOn = isFollowTheGoatOn();
+  const unfollowLocked = isDevProfile && followTheGoatOn && isFollowing;
 
   const openFollowList = async (type: "followers" | "following") => {
     if (!profile) return;
@@ -270,8 +277,13 @@ export default function UserProfilePage() {
             )}
           </div>
 
-          <h1 className="font-display text-[2rem] tracking-[.05em] leading-none text-white mb-1">
+          <h1 className="font-display text-[2rem] tracking-[.05em] leading-none text-white mb-1 flex items-center justify-center gap-2 flex-wrap">
             {profile.display_name || profile.username}
+            {isDevProfile && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[.65rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40">
+                DEV
+              </span>
+            )}
           </h1>
           <p className="font-mono text-[.82rem] text-muted tracking-[.04em] mb-5">
             @{profile.username}
@@ -300,8 +312,9 @@ export default function UserProfilePage() {
             {myId ? (
               isFollowing ? (
                 <button
-                  onClick={handleUnfollow}
-                  disabled={followLoading}
+                  onClick={unfollowLocked ? undefined : handleUnfollow}
+                  disabled={followLoading || unfollowLocked}
+                  title={unfollowLocked ? "You always follow the developer" : undefined}
                   className="px-8 py-3 rounded-btn text-[.85rem] font-semibold tracking-[.03em] bg-surface2 text-white border border-border2 hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
                   {followLoading ? "..." : "Following"}

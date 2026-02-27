@@ -61,7 +61,7 @@ export default async function MatchDetailPage({
         <header className="flex items-center justify-between gap-4 py-4 border-b border-border">
           <Link href="/" className="flex items-center gap-2 text-sm font-mono text-muted hover:text-white shrink-0">
             <span aria-hidden>←</span>
-            Matches
+            Games
           </Link>
           <div className="flex items-center justify-center gap-2 min-w-0">
             {match.emblem_url ? (

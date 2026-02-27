@@ -4,7 +4,7 @@ This document describes the intended hierarchy and components for each sport. Th
 
 ## Football
 
-Already implemented. Competition chips (All, EPL, UCL, La Liga, BL, Serie A, L1), date strip, matches feed, and standings per competition.
+Already implemented. Competition chips (All, EPL, UCL, La Liga, BL, Serie A, L1), date strip, games feed, and standings per competition.
 
 ---
 

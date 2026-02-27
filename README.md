@@ -1,6 +1,6 @@
 # REPLAYD
 
-Letterboxd-style web app for soccer matches. Log matches, rate them, write reviews, tag them, build lists.
+Letterboxd-style web app for games (football first, more sports coming). Log games, rate them, write reviews, tag them, build lists.
 
 **V1 scope:** Premier League, La Liga, Bundesliga, Serie A, Ligue 1, UEFA Champions League — 2024/25 season only.
 

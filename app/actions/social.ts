@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
+import { isFollowTheGoatOn, isDevUsername } from "@/lib/follow-the-goat";
 
 interface UserSearchResult {
   id: string;
@@ -88,6 +89,17 @@ export async function unfollowUser(targetId: string): Promise<{ success: boolean
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not logged in" };
+
+  // FOLLOW THE GOAT: do not allow unfollowing the dev when feature is on
+  if (isFollowTheGoatOn()) {
+    const { rows: targetRows } = await query<{ username: string }>(
+      "SELECT username FROM profiles WHERE id = $1",
+      [targetId]
+    );
+    if (targetRows.length > 0 && isDevUsername(targetRows[0].username)) {
+      return { success: false, error: "You cannot unfollow this account." };
+    }
+  }
 
   await query(
     "DELETE FROM follows WHERE follower_id = $1 AND following_id = $2",

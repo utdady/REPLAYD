@@ -120,7 +120,7 @@ export function TeamPageClient({
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "matches", label: "Matches" },
+    { id: "matches", label: "Games" },
     { id: "table", label: "Table" },
     { id: "stats", label: "Stats" },
     { id: "squad", label: "Squad" },
@@ -195,7 +195,7 @@ export function TeamPageClient({
               <>
                 {overview.nextMatch && (
                   <section>
-                    <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-2">Next match</h2>
+                    <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted mb-2">Next game</h2>
                     <Link
                       href={`/matches/${overview.nextMatch.id}`}
                       className="block p-3.5 rounded-card bg-surface2 border border-border hover:border-border2 transition-colors"
@@ -337,7 +337,7 @@ export function TeamPageClient({
               </select>
             </div>
             {loadingMatches ? (
-              <p className="text-sm text-muted">Loading matches…</p>
+              <p className="text-sm text-muted">Loading games…</p>
             ) : matches && matches.length > 0 ? (
               (() => {
                 const now = Date.now();
@@ -432,7 +432,7 @@ export function TeamPageClient({
                 );
               })()
             ) : (
-              <p className="text-sm text-muted">No matches for this season.</p>
+              <p className="text-sm text-muted">No games for this season.</p>
             )}
           </div>
         )}

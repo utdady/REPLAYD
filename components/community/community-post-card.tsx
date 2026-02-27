@@ -8,6 +8,7 @@ import { StarRating } from "@/components/ui/star-rating";
 import { toggleLogLike } from "@/app/actions/match";
 import { PostComments } from "@/components/community/post-comments";
 import type { CommunityFeedItem } from "@/app/actions/community";
+import { isDevUsername } from "@/lib/follow-the-goat";
 
 export interface CommunityPostCardProps {
   post: CommunityFeedItem;
@@ -64,6 +65,11 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
             >
               {post.username}
             </Link>
+            {isDevUsername(post.username) && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40">
+                DEV
+              </span>
+            )}
             <span className="text-xs font-mono text-muted2">
               {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
             </span>

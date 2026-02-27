@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
+import { isFollowTheGoatOn, DEV_USERNAME } from "@/lib/follow-the-goat";
 
 interface ProfileRow {
   id: string;
@@ -69,6 +70,20 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
       "INSERT INTO profiles (id, username, display_name, avatar_url) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING",
       [user.id, finalName, meta.full_name ?? meta.name ?? null, meta.avatar_url ?? null]
     );
+
+    // FOLLOW THE GOAT: auto-follow dev account for new users when feature is on
+    if (isFollowTheGoatOn()) {
+      const { rows: devRows } = await query<{ id: string }>(
+        "SELECT id FROM profiles WHERE LOWER(username) = LOWER($1) AND id != $2",
+        [DEV_USERNAME, user.id]
+      );
+      if (devRows.length > 0) {
+        await query(
+          "INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+          [user.id, devRows[0].id]
+        );
+      }
+    }
 
     return {
       id: user.id,

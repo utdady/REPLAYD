@@ -200,7 +200,7 @@ export function MatchLogSheet({
 
   async function handleToggleQuick(systemKey: "liked" | "watched" | "watchlist") {
     if (!canUseQuickActions) {
-      setQuickActionsError("Sign in to save this match.");
+      setQuickActionsError("Sign in to save this game.");
       return;
     }
     setQuickActionsError(null);

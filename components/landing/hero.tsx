@@ -12,15 +12,15 @@ export function Hero() {
         <h1 className="font-display text-[clamp(4rem,8.5vw,7.5rem)] leading-[0.92] tracking-[0.02em] mb-7">
           EVERY
           <br />
-          MATCH
+          GAME
           <br />
           YOU&apos;VE
           <br />
           <em className="not-italic text-green">EVER SEEN.</em>
         </h1>
         <p className="text-base leading-[1.72] text-muted max-w-[400px] mb-9">
-          Your personal match diary. <strong className="text-white font-normal">Rate with stars</strong>, write short
-          reviews, add games to lists, and see what the community is watching. Football first — F1, NBA & NFL coming soon.
+          Your personal game diary. <strong className="text-white font-normal">Rate with stars</strong>, write short
+          reviews, add games to lists, and see what the community is watching across sports. Football first — F1, NBA & NFL coming soon.
         </p>
         <div className="flex flex-wrap items-center gap-5">
           <Link

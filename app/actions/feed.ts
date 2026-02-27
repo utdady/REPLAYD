@@ -2,6 +2,7 @@
 
 import { query } from "@/lib/db";
 import { CHIP_TO_CODE, FEED_SEASON_YEAR } from "@/lib/feed-constants";
+import { createClient } from "@/lib/supabase/server";
 
 interface StandingRow {
   team_id: number;
@@ -126,39 +127,122 @@ export async function getMatchesForFeed(
   return rows;
 }
 
-/** Demo data for the \"Popular this week\" section. Later we can swap this for a real query. */
 export async function getPopularMatches(): Promise<PopularMatchRow[]> {
-  return [
-    {
-      id: "p1",
-      competition: "EPL",
-      home: { name: "Liverpool", crest: "🔴" },
-      away: { name: "Man City", crest: "🔵" },
-      homeScore: 3,
-      awayScore: 2,
-    },
-    {
-      id: "p2",
-      competition: "La Liga",
-      home: { name: "Barcelona", crest: "🔵" },
-      away: { name: "Real Madrid", crest: "⚪" },
-      homeScore: 1,
-      awayScore: 1,
-    },
-  ];
+  // Last 7 days: matches with the most logs (any user)
+  const sql = `
+    WITH recent AS (
+      SELECT
+        ml.match_id,
+        COUNT(*)::int AS log_count
+      FROM match_logs ml
+      WHERE ml.created_at >= NOW() - INTERVAL '7 days'
+      GROUP BY ml.match_id
+    )
+    SELECT
+      m.id,
+      c.code AS competition_code,
+      ht.name AS home_team_name,
+      ht.crest_url AS home_crest_url,
+      at.name AS away_team_name,
+      at.crest_url AS away_crest_url,
+      m.home_score,
+      m.away_score,
+      r.log_count
+    FROM recent r
+    JOIN matches m ON m.id = r.match_id
+    JOIN competitions c ON c.id = m.competition_id
+    JOIN teams ht ON ht.id = m.home_team_id
+    JOIN teams at ON at.id = m.away_team_id
+    ORDER BY r.log_count DESC, m.utc_date DESC
+    LIMIT 10
+  `;
+
+  try {
+    const { rows } = await query<{
+      id: number;
+      competition_code: string;
+      home_team_name: string;
+      home_crest_url: string | null;
+      away_team_name: string;
+      away_crest_url: string | null;
+      home_score: number | null;
+      away_score: number | null;
+      log_count: number;
+      [key: string]: unknown;
+    }>(sql, []);
+
+    return rows.map((r) => ({
+      id: String(r.id),
+      competition: CHIP_TO_CODE[r.competition_code] ?? r.competition_code,
+      home: { name: r.home_team_name, crest: r.home_crest_url },
+      away: { name: r.away_team_name, crest: r.away_crest_url },
+      homeScore: r.home_score,
+      awayScore: r.away_score,
+    }));
+  } catch {
+    return [];
+  }
 }
 
-/** Demo data for the \"New from friends\" section. Later we can swap this for a real query. */
 export async function getFriendMatches(): Promise<FriendMatchRow[]> {
-  return [
-    {
-      id: "f1",
-      competition: "UCL",
-      home: { name: "Inter", crest: "🔵" },
-      away: { name: "Atlético", crest: "🔴" },
-      homeScore: 2,
-      awayScore: 0,
-      friend: { username: "footy_fan", avatarUrl: null },
-    },
-  ];
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Logs from people the current user follows, newest first
+  const sql = `
+    SELECT
+      ml.match_id,
+      m.id,
+      c.code AS competition_code,
+      ht.name AS home_team_name,
+      ht.crest_url AS home_crest_url,
+      at.name AS away_team_name,
+      at.crest_url AS away_crest_url,
+      m.home_score,
+      m.away_score,
+      p.username,
+      p.avatar_url,
+      ml.created_at
+    FROM match_logs ml
+    JOIN follows f ON f.following_id = ml.user_id
+    JOIN profiles p ON p.id = ml.user_id
+    JOIN matches m ON m.id = ml.match_id
+    JOIN competitions c ON c.id = m.competition_id
+    JOIN teams ht ON ht.id = m.home_team_id
+    JOIN teams at ON at.id = m.away_team_id
+    WHERE f.follower_id = $1
+    ORDER BY ml.created_at DESC
+    LIMIT 10
+  `;
+
+  try {
+    const { rows } = await query<{
+      id: number;
+      competition_code: string;
+      home_team_name: string;
+      home_crest_url: string | null;
+      away_team_name: string;
+      away_crest_url: string | null;
+      home_score: number | null;
+      away_score: number | null;
+      username: string;
+      avatar_url: string | null;
+      [key: string]: unknown;
+    }>(sql, [user.id]);
+
+    return rows.map((r) => ({
+      id: String(r.id),
+      competition: CHIP_TO_CODE[r.competition_code] ?? r.competition_code,
+      home: { name: r.home_team_name, crest: r.home_crest_url },
+      away: { name: r.away_team_name, crest: r.away_crest_url },
+      homeScore: r.home_score,
+      awayScore: r.away_score,
+      friend: { username: r.username, avatarUrl: r.avatar_url },
+    }));
+  } catch {
+    return [];
+  }
 }

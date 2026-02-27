@@ -74,7 +74,7 @@ export function CommunityFeedClient({ currentUserId }: CommunityFeedClientProps)
             ? currentUserId
               ? "No posts from people you follow yet."
               : "Sign in to see posts from people you follow."
-            : "No posts yet. Log a match to see it here."}
+            : "No posts yet. Log a game to see it here."}
         </p>
       ) : (
         <ul className="space-y-3 list-none">
