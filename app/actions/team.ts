@@ -27,7 +27,7 @@ export async function getTeamById(identifier: string): Promise<TeamRow | null> {
   const { rows } = await query<TeamRow>(
     `SELECT id, name, short_name, tla, crest_url
      FROM teams
-     WHERE lower(regexp_replace(name, '[^a-z0-9]+', '-', 'g')) = $1
+     WHERE regexp_replace(lower(name), '[^a-z0-9]+', '-', 'g') = $1
      LIMIT 1`,
     [identifier.toLowerCase()]
   );
