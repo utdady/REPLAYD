@@ -41,7 +41,7 @@ export async function Nav() {
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 h-12 flex items-center px-4 sm:px-6 md:px-10 bg-gradient-to-b from-black/98 to-transparent backdrop-blur-sm overflow-visible">
-      <Link href="/" className={`font-display ${navTextClass} text-[.85rem] text-green shrink-0`}>
+      <Link href="/" className="font-display text-xl sm:text-2xl font-bold tracking-[0.15em] text-green shrink-0 leading-none">
         REPLAY<span className="text-white">D</span>
       </Link>
       <div className="hidden md:flex items-center gap-8 flex-1 justify-center">
@@ -55,23 +55,23 @@ export async function Nav() {
           </Link>
         ))}
       </div>
-      <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap min-h-[2rem]">
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap">
         {user ? (
           <>
-            <div className="relative group flex items-center min-h-[2rem]">
+            <div className="relative group flex items-center">
               <form
                 action={async () => {
                   "use server";
                   await markAllRead();
                 }}
-                className="flex items-center min-h-[2rem]"
+                className="flex items-center"
               >
                 <button
                   type="submit"
-                  className="relative w-8 h-8 min-w-8 min-h-8 rounded-full flex items-center justify-center text-muted hover:text-white hover:bg-surface2 transition-colors p-0 border-0"
+                  className="relative w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-muted hover:text-white hover:bg-surface2 transition-colors p-0 border-0 leading-none"
                   aria-label="Notifications"
                 >
-                  <span className="text-[.7rem] leading-none">🔔</span>
+                  <span className="text-base leading-none">🔔</span>
                   {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-3.5 px-1 rounded-full bg-green text-black text-[0.6rem] font-mono font-bold flex items-center justify-center leading-none">
                       {unreadCount > 9 ? "9+" : unreadCount}
@@ -132,13 +132,13 @@ export async function Nav() {
                 </div>
               </div>
             </div>
-            <Link href="/profile" className={`${navTextClass} text-muted hover:text-white hidden sm:inline-flex sm:items-center transition-colors whitespace-nowrap`}>
+            <Link href="/profile" className={`${navTextClass} text-muted hover:text-white hidden sm:inline-flex sm:items-center sm:py-0 transition-colors whitespace-nowrap`}>
               Profile
             </Link>
-            <form action={signout} className="inline-flex items-center min-h-[2rem]">
+            <form action={signout} className="inline-flex items-center">
               <button
                 type="submit"
-                className={`${navTextClass} text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 m-0 inline-flex items-center min-h-[2rem]`}
+                className={`${navTextClass} text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 m-0 inline-flex items-center leading-none`}
               >
                 Sign out
               </button>
@@ -146,7 +146,7 @@ export async function Nav() {
           </>
         ) : (
           <>
-            <Link href="/login" className={`${navTextClass} text-muted hover:text-white hidden sm:inline-flex sm:items-center transition-colors whitespace-nowrap`}>
+            <Link href="/login" className={`${navTextClass} text-muted hover:text-white hidden sm:inline-flex sm:items-center sm:py-0 transition-colors whitespace-nowrap`}>
               Log in
             </Link>
             <Link href="/signup">

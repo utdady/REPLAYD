@@ -49,10 +49,11 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
 
   return (
     <article className="rounded-card bg-surface2 border border-border overflow-hidden">
-      <div className="flex gap-3 p-3">
+      {/* Author block — avatar + name / handle / time */}
+      <div className="flex gap-3 p-4 pb-2">
         <Link href={`/users/${post.username}`} className="shrink-0">
           <span
-            className="block w-10 h-10 rounded-full bg-surface3 bg-cover bg-center"
+            className="block w-11 h-11 rounded-full bg-surface3 bg-cover bg-center"
             style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
             aria-hidden
           />
@@ -61,7 +62,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/users/${post.username}`}
-              className="text-sm font-sans font-medium text-white hover:text-green"
+              className="text-sm font-semibold text-white hover:text-green"
             >
               {post.username}
             </Link>
@@ -70,59 +71,72 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
                 DEV
               </span>
             )}
-            <span className="text-xs font-mono text-muted2">
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-            </span>
           </div>
-          <Link
-            href={`/matches/${post.match_id}`}
-            className="text-xs font-mono text-muted2 hover:text-green mt-0.5 block"
-          >
-            {matchLine}
-          </Link>
-          {post.rating != null && (
-            <div className="mt-1">
-              <StarRating value={post.rating} size="sm" readonly />
-            </div>
-          )}
-          {post.review ? (
-            <p className="text-sm text-muted mt-1.5 whitespace-pre-wrap break-words">{post.review}</p>
-          ) : null}
+          <p className="text-xs text-muted mt-0.5">
+            @{post.username}
+            <span className="text-muted2 mx-1.5">·</span>
+            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-4 px-3 pb-3 pt-0">
+
+      {/* Post content */}
+      <div className="px-4 pb-3">
+        <Link
+          href={`/matches/${post.match_id}`}
+          className="text-sm text-muted hover:text-green block"
+        >
+          {matchLine}
+        </Link>
+        {post.rating != null && (
+          <div className="mt-2">
+            <StarRating value={post.rating} size="sm" readonly />
+          </div>
+        )}
+        {post.review ? (
+          <p className="text-[0.9375rem] text-white mt-2 leading-snug whitespace-pre-wrap break-words">
+            {post.review}
+          </p>
+        ) : null}
+      </div>
+
+      {/* Engagement row — divider then icons */}
+      <div className="border-t border-border/80" />
+      <div className="flex items-center gap-6 px-4 py-2.5 text-muted">
+        <button
+          type="button"
+          onClick={() => setShowComments((s) => !s)}
+          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
+        >
+          <span className="text-[1rem]" aria-hidden>💬</span>
+          {post.comment_count > 0 && <span>{post.comment_count}</span>}
+        </button>
         <button
           type="button"
           onClick={handleLike}
           disabled={!currentUserId}
-          className="flex items-center gap-1.5 text-sm text-muted hover:text-white disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0"
           aria-label={liked ? "Unlike" : "Like"}
         >
-          <span className="text-base" aria-hidden>
+          <span className="text-[1rem]" aria-hidden>
             {liked ? "❤️" : "🤍"}
           </span>
           {likeCount > 0 && <span>{likeCount}</span>}
         </button>
         <button
           type="button"
-          onClick={() => setShowComments((s) => !s)}
-          className="flex items-center gap-1.5 text-sm text-muted hover:text-white"
-        >
-          <span aria-hidden>💬</span>
-          {post.comment_count > 0 && <span>{post.comment_count}</span>}
-        </button>
-        <button
-          type="button"
           onClick={handleShare}
-          className="flex items-center gap-1.5 text-sm text-muted hover:text-white"
+          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors ml-auto"
           aria-label="Copy link"
         >
-          <span aria-hidden>🔗</span>
+          <span className="text-[1rem]" aria-hidden>🔗</span>
           {copied ? <span className="text-green text-xs">Copied!</span> : null}
         </button>
       </div>
+
+      {/* Comments thread */}
       {showComments && (
-        <div className="px-3 pb-3">
+        <div className="border-t border-border/80">
           <PostComments
             logId={post.id}
             initialCount={post.comment_count}
