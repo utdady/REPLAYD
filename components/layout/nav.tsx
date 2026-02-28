@@ -53,22 +53,23 @@ export async function Nav() {
           </Link>
         ))}
       </div>
-      <div className="flex items-center gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap">
+      <div className="flex items-center gap-4 shrink-0 ml-auto md:ml-0 flex-nowrap h-8">
         {user ? (
           <>
-            <div className="relative group">
+            <div className="relative group flex items-center">
               <form
                 action={async () => {
                   "use server";
                   await markAllRead();
                 }}
+                className="flex items-center"
               >
                 <button
                   type="submit"
-                  className="relative w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-white hover:bg-surface2 transition-colors"
+                  className="relative w-8 h-8 rounded-full flex items-center justify-center text-muted hover:text-white hover:bg-surface2 transition-colors text-[.7rem]"
                   aria-label="Notifications"
                 >
-                  <span className="text-lg leading-none">🔔</span>
+                  <span className="text-base leading-none align-middle">🔔</span>
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-green text-black text-[0.65rem] font-mono font-bold flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}
@@ -127,13 +128,13 @@ export async function Nav() {
                 </div>
               </div>
             </div>
-            <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors whitespace-nowrap leading-none">
+            <Link href="/profile" className="text-[.7rem] font-mono uppercase tracking-[.18em] text-muted hover:text-white hidden sm:inline transition-colors whitespace-nowrap">
               Profile
             </Link>
-            <form action={signout} className="inline leading-none">
+            <form action={signout} className="flex items-center">
               <button
                 type="submit"
-                className="inline text-[.7rem] font-mono uppercase tracking-[.18em] font-bold text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 m-0 leading-none"
+                className="text-[.7rem] font-mono uppercase tracking-[.18em] text-green hover:text-green/80 transition-colors bg-transparent border-none cursor-pointer p-0 m-0"
               >
                 Sign out
               </button>
