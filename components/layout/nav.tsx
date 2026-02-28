@@ -79,6 +79,8 @@ export async function Nav() {
                   )}
                 </button>
               </form>
+              {/* Invisible bridge so cursor can move from bell to dropdown without losing hover */}
+              <div className="absolute top-full right-0 w-80 max-w-[calc(100vw-2rem)] h-2" aria-hidden />
               <div className="hidden group-hover:block absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-card shadow-lg z-[100]">
                 <div className="px-3 py-2 border-b border-border flex items-center justify-between">
                   <span className="text-[0.75rem] font-semibold tracking-[0.08em] uppercase text-muted">
