@@ -40,7 +40,7 @@ export async function Nav() {
   const navTextClass = "text-[.7rem] font-mono uppercase tracking-[.18em] leading-none";
 
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 h-14 flex items-center px-4 sm:px-6 md:px-10 bg-gradient-to-b from-black/98 to-transparent backdrop-blur-sm">
+    <nav className="fixed top-0 inset-x-0 z-50 h-12 flex items-center px-4 sm:px-6 md:px-10 bg-gradient-to-b from-black/98 to-transparent backdrop-blur-sm overflow-visible">
       <Link href="/" className={`font-display ${navTextClass} text-[.85rem] text-green shrink-0`}>
         REPLAY<span className="text-white">D</span>
       </Link>
@@ -79,7 +79,7 @@ export async function Nav() {
                   )}
                 </button>
               </form>
-              <div className="hidden group-hover:block absolute right-0 mt-2 w-80 bg-surface border border-border rounded-card shadow-lg z-50">
+              <div className="hidden group-hover:block absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-surface border border-border rounded-card shadow-lg z-[100]">
                 <div className="px-3 py-2 border-b border-border flex items-center justify-between">
                   <span className="text-[0.75rem] font-semibold tracking-[0.08em] uppercase text-muted">
                     Notifications

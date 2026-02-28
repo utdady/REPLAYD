@@ -166,27 +166,54 @@ function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+const FETCH_TIMEOUT_MS = 60_000;
+const API_FETCH_RETRIES = 3;
+const RETRY_DELAY_MS = 5_000;
+
 async function apiFetch<T>(path: string): Promise<T> {
   if (!API_KEY) throw new Error("FOOTBALL_DATA_API_KEY is not set");
   const url = `${API_BASE}${path}`;
   debug("GET", url);
 
-  const res = await fetch(url, {
-    headers: { "X-Auth-Token": API_KEY },
-  });
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= API_FETCH_RETRIES; attempt++) {
+    const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  if (res.status === 429) {
-    log("Rate limited — waiting 60s");
-    await sleep(60_000);
-    return apiFetch<T>(path);
+    try {
+      const res = await fetch(url, {
+        headers: { "X-Auth-Token": API_KEY },
+        signal: controller.signal,
+      });
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = undefined;
+
+      if (res.status === 429) {
+        log("Rate limited — waiting 60s");
+        await sleep(60_000);
+        return apiFetch<T>(path);
+      }
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`API error ${res.status} for ${path}: ${body}`);
+      }
+
+      return (await res.json()) as T;
+    } catch (err) {
+      lastErr = err;
+      if (timeoutId) clearTimeout(timeoutId);
+      const isAbort = err instanceof Error && (err.name === "AbortError" || err.message?.includes("canceled") || err.message?.includes("abort"));
+      const isRetryable = isAbort || (err instanceof Error && (err.message?.includes("ECONNRESET") || err.message?.includes("ETIMEDOUT")));
+      if (attempt < API_FETCH_RETRIES && isRetryable) {
+        log(`   ⚠ Request failed (attempt ${attempt}/${API_FETCH_RETRIES}), retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        await sleep(RETRY_DELAY_MS);
+      } else {
+        throw err;
+      }
+    }
   }
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`API error ${res.status} for ${path}: ${body}`);
-  }
-
-  return res.json() as Promise<T>;
+  throw lastErr;
 }
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
@@ -459,6 +486,32 @@ async function syncCompetition(pool: Pool, competitionId: number) {
   }
   if (skipped > 0) log(`   Skipped ${skipped} matches (TBD teams)`);
 
+  // 3b. Supplemental fetch: recent + upcoming window so we never miss the last-played or next match.
+  const now = new Date();
+  const dateFrom = new Date(now);
+  dateFrom.setUTCDate(dateFrom.getUTCDate() - 14);
+  const dateTo = new Date(now);
+  dateTo.setUTCDate(dateTo.getUTCDate() + 120);
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  const recentPath = `/competitions/${competitionId}/matches?season=${SYNC_SEASON}&dateFrom=${fmt(dateFrom)}&dateTo=${fmt(dateTo)}`;
+  try {
+    const recentData = await apiFetch<FDMatchesResponse>(recentPath);
+    await sleep(RATE_LIMIT_MS);
+    if (recentData.matches.length > 0) {
+      let recentUpserted = 0;
+      for (const m of recentData.matches) {
+        if (m.homeTeam?.id == null || m.awayTeam?.id == null) continue;
+        await upsertTeam(pool, m.homeTeam);
+        await upsertTeam(pool, m.awayTeam);
+        await upsertMatch(pool, m, competitionId, seasonId);
+        recentUpserted++;
+      }
+      log(`   ✓ ${recentUpserted} recent/upcoming matches ensured`);
+    }
+  } catch (err) {
+    log(`   ⚠ Recent/upcoming fetch failed (non-fatal):`, err);
+  }
+
   log(`   ✓ ${upserted} matches synced`);
 
   // 4. Fetch standings (skip CUP competitions — API returns 404)
@@ -555,14 +608,19 @@ async function main() {
         log(`── Match details: fetching ${matchIds.length} matches (cap ${SYNC_DETAILS_CAP})`);
         let done = 0;
         for (const matchId of matchIds) {
-          try {
-            const detail = await apiFetch<FDMatchDetail>(`/matches/${matchId}`);
-            await sleep(RATE_LIMIT_MS);
-            await upsertMatchDetail(pool, detail);
-            done++;
-            if (done % 25 === 0) log(`   ${done}/${matchIds.length} details synced`);
-          } catch (err) {
-            log(`   ⚠ Failed to fetch detail for match ${matchId}:`, err);
+          let synced = false;
+          for (let tryDetail = 0; tryDetail < 2 && !synced; tryDetail++) {
+            try {
+              const detail = await apiFetch<FDMatchDetail>(`/matches/${matchId}`);
+              await sleep(RATE_LIMIT_MS);
+              await upsertMatchDetail(pool, detail);
+              done++;
+              synced = true;
+              if (done % 25 === 0) log(`   ${done}/${matchIds.length} details synced`);
+            } catch (err) {
+              if (tryDetail === 1) log(`   ⚠ Failed to fetch detail for match ${matchId}:`, err);
+              else await sleep(RETRY_DELAY_MS);
+            }
           }
         }
         log(`   ✓ ${done} match details synced`);

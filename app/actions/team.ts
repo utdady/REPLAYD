@@ -150,7 +150,7 @@ export async function getTeamOverview(
               m.home_team_id, m.away_team_id, m.home_score, m.away_score,
               (CASE WHEN m.home_team_id = $1 THEN at.crest_url ELSE ht.crest_url END) AS opponent_crest_url
        ${joinClause}
-       WHERE ${teamMatchWhere} AND m.status = 'FINISHED'
+       WHERE ${teamMatchWhere} AND m.status IN ('FINISHED', 'IN_PLAY', 'PAUSED', 'SUSPENDED')
        ORDER BY m.utc_date DESC LIMIT 5`,
       [teamId, seasonYear]
     ),
