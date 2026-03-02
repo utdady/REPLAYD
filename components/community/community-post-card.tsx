@@ -49,56 +49,52 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
 
   return (
     <article className="rounded-card bg-surface2 border border-border overflow-hidden">
-      {/* Grid: avatar column | content column (name, match, review aligned) */}
-      <div className="grid grid-cols-[auto_1fr] gap-x-3 p-4 pb-3">
-        <Link
-          href={`/users/${post.username}`}
-          className="row-span-3 self-start shrink-0"
-          aria-label={`${post.username} profile`}
-        >
+      {/* Header row: avatar on the left, all text in a single column on the right */}
+      <div className="flex items-center gap-3 p-4 pb-3">
+        <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
           <span
             className="block w-11 h-11 rounded-full bg-surface3 bg-cover bg-center border border-border"
             style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
             aria-hidden
           />
         </Link>
-        {/* Row 1 — display name, @handle, time (one line, aligned with avatar top) */}
-        <div className="min-w-0 flex items-center gap-2 flex-wrap text-sm leading-tight">
-          <Link
-            href={`/users/${post.username}`}
-            className="font-semibold text-white hover:text-green truncate"
-          >
-            {post.username}
-          </Link>
-          {isDevUsername(post.username) && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
-              DEV
+        <div className="min-w-0 flex-1">
+          {/* Line 1 — display name, @handle, time */}
+          <div className="flex items-center gap-2 flex-wrap text-sm leading-tight">
+            <Link
+              href={`/users/${post.username}`}
+              className="font-semibold text-white hover:text-green truncate"
+            >
+              {post.username}
+            </Link>
+            {isDevUsername(post.username) && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
+                DEV
+              </span>
+            )}
+            <span className="text-xs text-muted truncate">
+              @{post.username}
+              <span className="text-muted2 mx-1.5">·</span>
+              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
             </span>
-          )}
-          <span className="text-xs text-muted truncate">
-            @{post.username}
-            <span className="text-muted2 mx-1.5">·</span>
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-          </span>
-        </div>
-        {/* Row 2 — match details (left) + stars (right-aligned) */}
-        <div className="min-w-0 flex items-center gap-2 text-sm text-muted mt-0.5">
-          <Link
-            href={`/matches/${post.match_id}`}
-            className="hover:text-green truncate min-w-0 flex-1"
-          >
-            {matchLine}
-          </Link>
-          {post.rating != null && (
-            <div className="shrink-0">
-              <StarRating value={post.rating} size="sm" readonly />
-            </div>
-          )}
-        </div>
-        {/* Row 3 — review */}
-        <div className="min-w-0 mt-1">
+          </div>
+          {/* Line 2 — match details + rating, aligned with header and avatar */}
+          <div className="mt-1 flex items-center gap-2 text-sm text-muted">
+            <Link
+              href={`/matches/${post.match_id}`}
+              className="hover:text-green truncate flex-1 min-w-0"
+            >
+              {matchLine}
+            </Link>
+            {post.rating != null && (
+              <div className="shrink-0">
+                <StarRating value={post.rating} size="sm" readonly />
+              </div>
+            )}
+          </div>
+          {/* Line 3 — review/log directly under the avatar/text column */}
           {post.review ? (
-            <p className="text-[0.9375rem] text-white leading-snug whitespace-pre-wrap break-words">
+            <p className="mt-2 text-[0.9375rem] text-white leading-snug whitespace-pre-wrap break-words">
               {post.review}
             </p>
           ) : null}
