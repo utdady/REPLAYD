@@ -59,8 +59,8 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           />
         </Link>
         <div className="min-w-0 flex-1">
-          {/* First line — display name, handle, time */}
-          <div className="flex items-center gap-2 flex-wrap text-sm">
+          {/* First line — display name, handle, time (baseline-aligned) */}
+          <div className="flex items-baseline gap-2 flex-wrap text-sm leading-none">
             <Link
               href={`/users/${post.username}`}
               className="font-semibold text-white hover:text-green max-w-xs truncate"
@@ -83,16 +83,17 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
 
       {/* Post content */}
       <div className="px-4 pb-3">
-        {/* Second line — match details + rating (same line) */}
-        <div className="flex items-center gap-2 text-sm text-muted">
+        {/* Second line — match details then rating (stars right after text) */}
+        <div className="flex items-center gap-2 text-sm text-muted min-w-0">
           <Link
             href={`/matches/${post.match_id}`}
-            className="hover:text-green flex-1 min-w-0 truncate"
+            className="hover:text-green truncate min-w-0"
+            style={{ maxWidth: "calc(100% - 6rem)" }}
           >
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex items-center shrink-0">
+            <div className="shrink-0">
               <StarRating value={post.rating} size="sm" readonly />
             </div>
           )}
