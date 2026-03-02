@@ -49,55 +49,62 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
 
   return (
     <article className="rounded-card bg-surface2 border border-border overflow-hidden">
-      {/* Header row: avatar on the left, all text in a single column on the right */}
-      <div className="flex items-center gap-3 p-4 pb-3">
-        <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
-          <span
-            className="block w-11 h-11 rounded-full bg-surface3 bg-cover bg-center border border-border"
-            style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
-            aria-hidden
-          />
-        </Link>
-        <div className="min-w-0 flex-1">
-          {/* Line 1 — display name, @handle, time */}
-          <div className="flex items-center gap-2 flex-wrap text-sm leading-tight">
-            <Link
-              href={`/users/${post.username}`}
-              className="font-semibold text-white hover:text-green truncate"
-            >
-              {post.username}
-            </Link>
-            {isDevUsername(post.username) && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
-                DEV
+      {/* Header: avatar + username/handle/time in one line */}
+      <div className="p-4 pb-3">
+        <div className="flex items-start gap-3">
+          <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
+            <span
+              className="block w-11 h-11 rounded-full bg-surface3 bg-cover bg-center border border-border"
+              style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
+              aria-hidden
+            />
+          </Link>
+          
+          <div className="min-w-0 flex-1">
+            {/* Single line: username, dev badge, handle, time */}
+            <div className="flex items-center gap-1.5 flex-wrap text-sm mb-1.5">
+              <Link
+                href={`/users/${post.username}`}
+                className="font-semibold text-white hover:text-green shrink-0"
+              >
+                {post.username}
+              </Link>
+              {isDevUsername(post.username) && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
+                  DEV
+                </span>
+              )}
+              <span className="text-xs text-muted2">
+                @{post.username}
               </span>
-            )}
-            <span className="text-xs text-muted truncate">
-              @{post.username}
-              <span className="text-muted2 mx-1.5">·</span>
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-            </span>
+              <span className="text-muted2 text-xs">·</span>
+              <span className="text-xs text-muted2">
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </span>
+            </div>
+
+            {/* Match line with rating on the right */}
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <Link
+                href={`/matches/${post.match_id}`}
+                className="text-sm text-muted hover:text-green truncate flex-1 min-w-0"
+              >
+                {matchLine}
+              </Link>
+              {post.rating != null && (
+                <div className="shrink-0">
+                  <StarRating value={post.rating} size="sm" readonly />
+                </div>
+              )}
+            </div>
+
+            {/* Review text */}
+            {post.review ? (
+              <p className="text-[0.9375rem] text-white leading-snug whitespace-pre-wrap break-words">
+                {post.review}
+              </p>
+            ) : null}
           </div>
-          {/* Line 2 — match details + rating, aligned with header and avatar */}
-          <div className="mt-1 flex items-center gap-2 text-sm text-muted">
-            <Link
-              href={`/matches/${post.match_id}`}
-              className="hover:text-green truncate flex-1 min-w-0"
-            >
-              {matchLine}
-            </Link>
-            {post.rating != null && (
-              <div className="shrink-0">
-                <StarRating value={post.rating} size="sm" readonly />
-              </div>
-            )}
-          </div>
-          {/* Line 3 — review/log directly under the avatar/text column */}
-          {post.review ? (
-            <p className="mt-2 text-[0.9375rem] text-white leading-snug whitespace-pre-wrap break-words">
-              {post.review}
-            </p>
-          ) : null}
         </div>
       </div>
 
