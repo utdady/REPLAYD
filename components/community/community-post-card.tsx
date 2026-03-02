@@ -83,16 +83,16 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
 
       {/* Post content */}
       <div className="px-4 pb-3">
-        {/* Second line — match details + rating */}
-        <div className="flex items-center gap-2 flex-wrap text-sm text-muted">
+        {/* Second line — match details + rating (same line) */}
+        <div className="flex items-center gap-2 text-sm text-muted">
           <Link
             href={`/matches/${post.match_id}`}
-            className="hover:text-green truncate max-w-full"
+            className="hover:text-green flex-1 min-w-0 truncate"
           >
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex items-center">
+            <div className="flex items-center shrink-0">
               <StarRating value={post.rating} size="sm" readonly />
             </div>
           )}
