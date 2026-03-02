@@ -59,10 +59,11 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           />
         </Link>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* First line — display name, handle, time */}
+          <div className="flex items-center gap-2 flex-wrap text-sm">
             <Link
               href={`/users/${post.username}`}
-              className="text-sm font-semibold text-white hover:text-green"
+              className="font-semibold text-white hover:text-green max-w-xs truncate"
             >
               {post.username}
             </Link>
@@ -71,28 +72,31 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
                 DEV
               </span>
             )}
+            <span className="text-xs text-muted truncate">
+              @{post.username}
+              <span className="text-muted2 mx-1.5">·</span>
+              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+            </span>
           </div>
-          <p className="text-xs text-muted mt-0.5">
-            @{post.username}
-            <span className="text-muted2 mx-1.5">·</span>
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-          </p>
         </div>
       </div>
 
       {/* Post content */}
       <div className="px-4 pb-3">
-        <Link
-          href={`/matches/${post.match_id}`}
-          className="text-sm text-muted hover:text-green block"
-        >
-          {matchLine}
-        </Link>
-        {post.rating != null && (
-          <div className="mt-2">
-            <StarRating value={post.rating} size="sm" readonly />
-          </div>
-        )}
+        {/* Second line — match details + rating */}
+        <div className="flex items-center gap-2 flex-wrap text-sm text-muted">
+          <Link
+            href={`/matches/${post.match_id}`}
+            className="hover:text-green truncate max-w-full"
+          >
+            {matchLine}
+          </Link>
+          {post.rating != null && (
+            <div className="flex items-center">
+              <StarRating value={post.rating} size="sm" readonly />
+            </div>
+          )}
+        </div>
         {post.review ? (
           <p className="text-[0.9375rem] text-white mt-2 leading-snug whitespace-pre-wrap break-words">
             {post.review}

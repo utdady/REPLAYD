@@ -2,8 +2,9 @@ name: Sync Matches
 
 on:
   schedule:
-    # Once per day at 06:00 UTC. Frees API headroom for match-detail sync (venue, referee, goals, lineups).
+    # Twice daily: 06:00 and 18:00 UTC.
     - cron: "0 6 * * *"
+    - cron: "0 18 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,7 +28,7 @@ jobs:
   sync:
     name: Sync from football-data.org
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     permissions:
       contents: read
       issues: write   # for "Notify on failure" step
@@ -66,10 +67,7 @@ jobs:
           SYNC_DAYS_BACK:          ${{ github.event.inputs.days_back || '7' }}
           SYNC_DAYS_AHEAD:         ${{ github.event.inputs.days_ahead || '14' }}
           SYNC_MATCH_DETAILS:      "true"
-          # Keep the daily scheduled job well under the 30min timeout:
-          #  - each detail call sleeps ~6.5s for rate limiting
-          #  - 75 calls ≈ 8–9 minutes of detail fetch time
-          #  - plus match + standings sync and npm ci stays safely below 30min
+          # 90min job timeout; 75 detail calls × ~6.5s rate limit ≈ 8–9 min of detail fetch
           SYNC_DETAILS_CAP:        "75"
         run: npx tsx scripts/sync-matches.ts
 
