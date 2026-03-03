@@ -27,13 +27,13 @@ function buildThread(comments: LogCommentRow[]): ThreadedComment[] {
     byId.set(c.id, { ...c, children: [] });
   }
 
-  for (const c of byId.values()) {
+  byId.forEach((c) => {
     if (c.parent_id && byId.has(c.parent_id)) {
       byId.get(c.parent_id)!.children.push(c);
     } else {
       roots.push(c);
     }
-  }
+  });
 
   return roots;
 }
