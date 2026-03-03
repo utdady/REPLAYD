@@ -34,10 +34,10 @@ export default async function CommunityPostPage({ params }: CommunityPostPagePro
         <div className="flex items-center gap-4 py-4">
           <Link
             href="/community"
-            className="text-muted hover:text-white text-sm font-medium"
+            className="text-muted hover:text-white text-lg font-medium leading-none pb-1"
             aria-label="Back to Community"
           >
-            ← Back
+            ←
           </Link>
           <h1 className="font-display text-2xl tracking-wide">Post</h1>
         </div>

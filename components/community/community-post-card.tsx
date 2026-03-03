@@ -195,7 +195,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           }}
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
         >
-          <CommentIcon className="w-4 h-4" />
+          <CommentIcon className="w-5 h-5" />
           {post.comment_count > 0 && <span>{post.comment_count}</span>}
         </button>
         <button
@@ -211,9 +211,9 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           aria-label={liked ? "Unlike" : "Like"}
         >
           {liked ? (
-            <HeartFilledIcon className="w-4 h-4 text-pink-500" />
+            <HeartFilledIcon className="w-5 h-5 text-pink-500" />
           ) : (
-            <HeartIcon className="w-4 h-4" />
+            <HeartIcon className="w-5 h-5" />
           )}
           {likeCount > 0 && <span>{likeCount}</span>}
         </button>
@@ -226,7 +226,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors ml-auto"
           aria-label="Copy link"
         >
-          <LinkIcon className="w-4 h-4" />
+          <LinkIcon className="w-5 h-5" />
           {copied ? <span className="text-green text-xs">Copied!</span> : null}
         </button>
       </div>

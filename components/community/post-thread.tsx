@@ -7,6 +7,7 @@ import {
   getLogComments,
   createLogComment,
   createLogReply,
+  deleteLogComment,
   type LogCommentRow,
 } from "@/app/actions/community";
 import { ReviewCharDial } from "@/components/ui/review-char-dial";
@@ -49,6 +50,16 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
   const [replyBody, setReplyBody] = React.useState("");
   const [submittingReply, setSubmittingReply] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
+  const replyTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const rootTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  function autoResize(el: HTMLTextAreaElement | null) {
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  }
 
   const loadComments = React.useCallback(async () => {
     setLoading(true);
@@ -97,6 +108,23 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
     }
   }
 
+  async function handleDelete(commentId: string) {
+    if (!currentUserId) return;
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm("Delete this comment?");
+      if (!confirmed) return;
+    }
+    setError(null);
+    setDeletingId(commentId);
+    const result = await deleteLogComment(commentId);
+    setDeletingId(null);
+    if (result.ok) {
+      await loadComments();
+    } else {
+      setError(result.error);
+    }
+  }
+
   const thread = comments ? buildThread(comments) : [];
 
   function renderComment(c: ThreadedComment, depth = 0) {
@@ -126,28 +154,48 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
           <p className="text-[0.9375rem] text-white mt-0.5 leading-snug whitespace-pre-wrap break-words">
             {c.body}
           </p>
-          {currentUserId && (
-            <button
-              type="button"
-              onClick={() => {
-                setReplyForId(c.id);
-                setReplyBody("");
-              }}
-              className="mt-1 text-[0.75rem] text-muted hover:text-white"
-            >
-              Reply
-            </button>
-          )}
+          <div className="mt-1 flex items-center gap-4 text-[0.75rem] text-muted">
+            {currentUserId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyForId(c.id);
+                  setReplyBody("");
+                  if (replyTextareaRef.current) {
+                    replyTextareaRef.current.style.height = "";
+                  }
+                }}
+                className="hover:text-white"
+              >
+                Reply
+              </button>
+            )}
+            {currentUserId === c.user_id && (
+              <button
+                type="button"
+                onClick={() => handleDelete(c.id)}
+                className="hover:text-red/80 disabled:opacity-60"
+                disabled={deletingId === c.id}
+              >
+                {deletingId === c.id ? "Deleting…" : "Delete"}
+              </button>
+            )}
+          </div>
           {replyForId === c.id && currentUserId && (
             <form onSubmit={handleReplySubmit} className="mt-2 flex gap-2">
               <div className="relative flex-1 min-w-0">
-                <input
-                  type="text"
+                <textarea
+                  ref={replyTextareaRef}
                   value={replyBody}
-                  onChange={(e) => setReplyBody(e.target.value.slice(0, 180))}
+                  onChange={(e) => {
+                    const next = e.target.value.slice(0, 180);
+                    setReplyBody(next);
+                    autoResize(e.target);
+                  }}
                   maxLength={180}
                   placeholder="Write a reply"
-                  className="flex-1 w-full pr-12 px-3 py-2 rounded-full bg-surface3 border border-border text-white text-[0.875rem] placeholder:text-muted focus:outline-none focus:border-border2"
+                  rows={1}
+                  className="flex-1 w-full pr-12 px-3 py-2 rounded-2xl bg-surface3 border border-border text-white text-[0.875rem] placeholder:text-muted focus:outline-none focus:border-border2 resize-none leading-snug"
                 />
                 <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
                   <ReviewCharDial value={replyBody.length} max={180} size={32} />
@@ -185,27 +233,34 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
           ) : (
             <div className="w-9 h-9 rounded-full bg-surface3 shrink-0" aria-hidden />
           )}
-          <div className="flex-1 min-w-0 flex items-center gap-2">
-            <div className="relative flex-1 min-w-0">
-              <input
-                type="text"
-                value={rootBody}
-                onChange={(e) => setRootBody(e.target.value.slice(0, 180))}
-                placeholder="Post your reply"
-                maxLength={180}
-                className="flex-1 w-full pr-12 px-3 py-2.5 rounded-full bg-surface3 border border-border text-white text-[0.9375rem] placeholder:text-muted focus:outline-none focus:border-border2"
-              />
-              <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
-                <ReviewCharDial value={rootBody.length} max={180} size={32} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-end gap-2">
+              <div className="relative flex-1 min-w-0">
+                <textarea
+                  ref={rootTextareaRef}
+                  value={rootBody}
+                  onChange={(e) => {
+                    const next = e.target.value.slice(0, 180);
+                    setRootBody(next);
+                    autoResize(e.target);
+                  }}
+                  placeholder="Post your reply"
+                  maxLength={180}
+                  rows={1}
+                  className="flex-1 w-full pr-12 px-3 py-2.5 rounded-2xl bg-surface3 border border-border text-white text-[0.9375rem] placeholder:text-muted focus:outline-none focus:border-border2 resize-none leading-snug"
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
+                  <ReviewCharDial value={rootBody.length} max={180} size={32} />
+                </div>
               </div>
+              <button
+                type="submit"
+                disabled={submittingRoot || !rootBody.trim()}
+                className="px-4 py-2.5 rounded-full bg-muted text-white text-[0.8125rem] font-semibold hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {submittingRoot ? "…" : "Reply"}
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={submittingRoot || !rootBody.trim()}
-              className="px-4 py-2.5 rounded-full bg-muted text-white text-[0.8125rem] font-semibold hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {submittingRoot ? "…" : "Reply"}
-            </button>
           </div>
         </form>
       ) : (

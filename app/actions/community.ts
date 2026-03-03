@@ -296,6 +296,37 @@ export async function createLogComment(
   }
 }
 
+export async function deleteLogComment(
+  commentId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You must be signed in to delete a comment." };
+
+  if (!commentId || !LOG_ID_UUID_REGEX.test(commentId)) {
+    return { ok: false, error: "Invalid comment." };
+  }
+
+  const sql = `
+    DELETE FROM log_comments
+    WHERE id = $1 AND user_id = $2
+    RETURNING id
+  `;
+
+  try {
+    const { rows } = await query<{ id: string }>(sql, [commentId, user.id]);
+    if (!rows[0]) {
+      return { ok: false, error: "You can only delete your own comments." };
+    }
+    return { ok: true };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to delete comment";
+    return { ok: false, error: message };
+  }
+}
+
 export async function getCommunityPostById(
   logId: string,
   currentUserId: string | null
