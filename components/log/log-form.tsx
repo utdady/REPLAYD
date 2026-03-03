@@ -3,6 +3,7 @@
 import * as React from "react";
 import { RatingStars } from "@/components/log/rating-stars";
 import { Button } from "@/components/ui/button";
+import { REVIEW_MAX_LENGTH } from "@/lib/constants";
 
 export interface LogFormValues {
   rating: number | null;
@@ -60,7 +61,7 @@ export function LogForm({
           onChange={(e) => setReview(e.target.value)}
           placeholder="What did you think?"
           rows={4}
-          maxLength={5000}
+          maxLength={REVIEW_MAX_LENGTH}
           className="w-full rounded-badge border border-border2 bg-surface px-3 py-2 text-sm font-sans text-white placeholder:text-muted2 focus:outline-none focus:ring-1 focus:ring-green"
         />
       </div>

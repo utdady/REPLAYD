@@ -28,7 +28,11 @@ export default async function CommunityPostPage({ params }: CommunityPostPagePro
       <div className="max-w-2xl mx-auto px-4 pb-24">
         <h1 className="font-display text-2xl tracking-wide py-4">Post</h1>
         <CommunityPostCard post={post} currentUserId={currentUserId} />
-        <PostThread logId={post.id} currentUserId={currentUserId} />
+        <PostThread
+          logId={post.id}
+          currentUserId={currentUserId}
+          currentUserAvatarUrl={currentUser?.avatar_url ?? null}
+        />
       </div>
     </div>
   );

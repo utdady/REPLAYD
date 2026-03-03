@@ -3,9 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { query } from "@/lib/db";
 import { createNotification } from "@/app/actions/notifications";
+import { COMMENT_MAX_LENGTH } from "@/lib/constants";
 
 const LOG_ID_UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MAX_COMMENT_BODY = 500;
+const MAX_COMMENT_BODY = COMMENT_MAX_LENGTH;
 const FEED_PAGE_SIZE = 20;
 
 export type CommunityTab = "feed" | "friends";

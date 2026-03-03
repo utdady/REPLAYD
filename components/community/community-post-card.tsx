@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { StarRating } from "@/components/ui/star-rating";
 import { toggleLogLike } from "@/app/actions/match";
-import { PostComments } from "@/components/community/post-comments";
 import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
 
@@ -88,7 +87,6 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
   const router = useRouter();
   const [liked, setLiked] = React.useState(post.current_user_liked);
   const [likeCount, setLikeCount] = React.useState(post.like_count);
-  const [showComments, setShowComments] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [justLiked, setJustLiked] = React.useState(false);
 
@@ -193,7 +191,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setShowComments((s) => !s);
+            router.push(`/community/${post.id}`);
           }}
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
         >
@@ -232,20 +230,6 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           {copied ? <span className="text-green text-xs">Copied!</span> : null}
         </button>
       </div>
-
-      {/* Comments thread */}
-      {showComments && (
-        <div className="border-t border-border/80">
-          <PostComments
-            logId={post.id}
-            initialCount={post.comment_count}
-            currentUserId={currentUserId}
-            onCommentAdded={() => {
-              router.refresh();
-            }}
-          />
-        </div>
-      )}
     </article>
   );
 }

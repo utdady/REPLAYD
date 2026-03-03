@@ -9,10 +9,13 @@ import {
   createLogReply,
   type LogCommentRow,
 } from "@/app/actions/community";
+import { COMMENT_MAX_LENGTH } from "@/lib/constants";
+import { CharacterDial } from "@/components/log/character-dial";
 
 export interface PostThreadProps {
   logId: string;
   currentUserId: string | null;
+  currentUserAvatarUrl?: string | null;
 }
 
 interface ThreadedComment extends LogCommentRow {
@@ -38,7 +41,7 @@ function buildThread(comments: LogCommentRow[]): ThreadedComment[] {
   return roots;
 }
 
-export function PostThread({ logId, currentUserId }: PostThreadProps) {
+export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostThreadProps) {
   const [comments, setComments] = React.useState<LogCommentRow[] | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [rootBody, setRootBody] = React.useState("");
@@ -50,9 +53,16 @@ export function PostThread({ logId, currentUserId }: PostThreadProps) {
 
   const loadComments = React.useCallback(async () => {
     setLoading(true);
-    const list = await getLogComments(logId);
-    setComments(list);
-    setLoading(false);
+    setError(null);
+    try {
+      const list = await getLogComments(logId);
+      setComments(list);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to load replies";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   }, [logId]);
 
   React.useEffect(() => {
@@ -132,15 +142,16 @@ export function PostThread({ logId, currentUserId }: PostThreadProps) {
             </button>
           )}
           {replyForId === c.id && currentUserId && (
-            <form onSubmit={handleReplySubmit} className="mt-2 flex gap-2">
+            <form onSubmit={handleReplySubmit} className="mt-2 flex gap-2 items-center">
               <input
                 type="text"
                 value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value.slice(0, 500))}
-                maxLength={500}
+                onChange={(e) => setReplyBody(e.target.value.slice(0, COMMENT_MAX_LENGTH))}
+                maxLength={COMMENT_MAX_LENGTH}
                 placeholder="Write a reply"
                 className="flex-1 min-w-0 px-3 py-2 rounded-full bg-surface3 border border-border text-white text-[0.875rem] placeholder:text-muted focus:outline-none focus:border-border2"
               />
+              <CharacterDial value={replyBody.length} max={COMMENT_MAX_LENGTH} />
               <button
                 type="submit"
                 disabled={submittingReply || !replyBody.trim()}
@@ -164,16 +175,23 @@ export function PostThread({ logId, currentUserId }: PostThreadProps) {
     <div className="mt-4">
       {currentUserId ? (
         <form onSubmit={handleRootSubmit} className="flex gap-3 py-3 border-b border-border/80">
-          <div className="w-9 h-9 rounded-full bg-surface3 shrink-0" aria-hidden />
+          <div
+            className="w-9 h-9 rounded-full bg-surface3 bg-cover bg-center shrink-0"
+            style={{
+              backgroundImage: currentUserAvatarUrl ? `url(${currentUserAvatarUrl})` : undefined,
+            }}
+            aria-hidden={!currentUserAvatarUrl}
+          />
           <div className="flex-1 min-w-0 flex items-center gap-2">
             <input
               type="text"
               value={rootBody}
-              onChange={(e) => setRootBody(e.target.value.slice(0, 500))}
+              onChange={(e) => setRootBody(e.target.value.slice(0, COMMENT_MAX_LENGTH))}
               placeholder="Post your reply"
-              maxLength={500}
+              maxLength={COMMENT_MAX_LENGTH}
               className="flex-1 min-w-0 px-3 py-2.5 rounded-full bg-surface3 border border-border text-white text-[0.9375rem] placeholder:text-muted focus:outline-none focus:border-border2"
             />
+            <CharacterDial value={rootBody.length} max={COMMENT_MAX_LENGTH} />
             <button
               type="submit"
               disabled={submittingRoot || !rootBody.trim()}
