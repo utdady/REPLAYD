@@ -10,6 +10,74 @@ import { PostComments } from "@/components/community/post-comments";
 import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
 
+// Icons inherit color from parent via currentColor
+function CommentIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 19.5 4 21v-3.5" />
+      <path d="M5.5 5h13A1.5 1.5 0 0 1 20 6.5v7A1.5 1.5 0 0 1 18.5 15h-9L7 17l-1.5-2H5.5A1.5 1.5 0 0 1 4 13.5v-7A1.5 1.5 0 0 1 5.5 5Z" />
+    </svg>
+  );
+}
+
+function HeartIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 20s-4.5-2.7-7.1-5.3C2.4 12.2 2 9.7 3.3 8a3.8 3.8 0 0 1 5.7-.2L12 10l3-2.2a3.8 3.8 0 0 1 5.7.2c1.3 1.7.9 4.2-1.6 6.7C16.5 17.3 12 20 12 20Z" />
+    </svg>
+  );
+}
+
+function HeartFilledIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className={className}
+      fill="currentColor"
+    >
+      <path d="M12 20s-4.5-2.7-7.1-5.3C2.4 12.2 2 9.7 3.3 8a3.8 3.8 0 0 1 5.7-.2L12 10l3-2.2a3.8 3.8 0 0 1 5.7.2c1.3 1.7.9 4.2-1.6 6.7C16.5 17.3 12 20 12 20Z" />
+    </svg>
+  );
+}
+
+function LinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9.5 14.5 8 16a3 3 0 0 0 4.2 4.2l2.8-2.8A3 3 0 0 0 15.5 12" />
+      <path d="M14.5 9.5 16 8a3 3 0 0 0-4.2-4.2L9 6.6A3 3 0 0 0 8.5 12" />
+      <path d="M9 12h6" />
+    </svg>
+  );
+}
+
 export interface CommunityPostCardProps {
   post: CommunityFeedItem;
   currentUserId: string | null;
@@ -22,6 +90,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
   const [likeCount, setLikeCount] = React.useState(post.like_count);
   const [showComments, setShowComments] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [justLiked, setJustLiked] = React.useState(false);
 
   const matchLine =
     post.home_score != null && post.away_score != null
@@ -34,8 +103,11 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
     if (result.ok) {
       setLiked(result.liked);
       setLikeCount((c) => (result.liked ? c + 1 : c - 1));
+       if (result.liked) {
+         setJustLiked(true);
+         setTimeout(() => setJustLiked(false), 180);
+       }
       onLikeToggle?.();
-      router.refresh();
     }
   }
 
@@ -116,19 +188,23 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           onClick={() => setShowComments((s) => !s)}
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
         >
-          <span className="text-[1rem]" aria-hidden>💬</span>
+          <CommentIcon className="w-4 h-4" />
           {post.comment_count > 0 && <span>{post.comment_count}</span>}
         </button>
         <button
           type="button"
           onClick={handleLike}
           disabled={!currentUserId}
-          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0"
+          className={`flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0 transform ${
+            justLiked && liked ? "scale-110" : ""
+          }`}
           aria-label={liked ? "Unlike" : "Like"}
         >
-          <span className="text-[1rem]" aria-hidden>
-            {liked ? "❤️" : "🤍"}
-          </span>
+          {liked ? (
+            <HeartFilledIcon className="w-4 h-4 text-pink-500" />
+          ) : (
+            <HeartIcon className="w-4 h-4" />
+          )}
           {likeCount > 0 && <span>{likeCount}</span>}
         </button>
         <button
@@ -137,7 +213,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors ml-auto"
           aria-label="Copy link"
         >
-          <span className="text-[1rem]" aria-hidden>🔗</span>
+          <LinkIcon className="w-4 h-4" />
           {copied ? <span className="text-green text-xs">Copied!</span> : null}
         </button>
       </div>
