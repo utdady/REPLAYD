@@ -62,7 +62,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           
           <div className="min-w-0 flex-1">
             {/* Single line: username, dev badge, handle, time */}
-            <div className="flex items-center gap-1.5 flex-wrap text-sm mb-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap text-sm mb-1">
               <Link
                 href={`/users/${post.username}`}
                 className="font-semibold text-white hover:text-green shrink-0"
@@ -100,7 +100,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
 
             {/* Review text */}
             {post.review ? (
-              <p className="text-[0.9375rem] text-white leading-snug whitespace-pre-wrap break-words">
+              <p className="text-[0.9375rem] text-white leading-[1.5] whitespace-pre-wrap break-words">
                 {post.review}
               </p>
             ) : null}
