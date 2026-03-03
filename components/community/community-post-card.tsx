@@ -230,6 +230,8 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           {copied ? <span className="text-green text-xs">Copied!</span> : null}
         </button>
       </div>
+
+      {/* Comments thread moved to dedicated post page */}
     </article>
   );
 }
