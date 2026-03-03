@@ -240,8 +240,12 @@ export async function getLogComments(logId: string): Promise<LogCommentRow[]> {
     WHERE lc.log_id = $1
     ORDER BY lc.created_at ASC
   `;
-  const { rows } = await query<LogCommentRow>(sql, [logId]);
-  return rows;
+  try {
+    const { rows } = await query<LogCommentRow>(sql, [logId]);
+    return rows.map((r) => ({ ...r, parent_id: r.parent_id ?? null }));
+  } catch {
+    return [];
+  }
 }
 
 export async function createLogComment(
