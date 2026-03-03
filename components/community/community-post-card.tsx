@@ -61,24 +61,26 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           </Link>
           
           <div className="min-w-0 flex-1">
-            {/* Single line: display name, @username · time (like screenshot) */}
-            <div className="flex items-center gap-1.5 text-sm mb-1 whitespace-nowrap">
+            {/* Single line: display name, @username · time (forced onto one line) */}
+            <div className="text-sm mb-1 whitespace-nowrap">
               <Link
                 href={`/users/${post.username}`}
-                className="font-semibold text-white hover:text-green shrink-0"
+                className="inline-flex items-center gap-1.5 hover:text-green"
               >
-                {post.username}
-              </Link>
-              {isDevUsername(post.username) && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
-                  DEV
+                <span className="font-semibold text-white shrink-0">
+                  {post.username}
                 </span>
-              )}
-              <span className="text-xs text-muted2">
-                @{post.username}
-                <span className="mx-1">·</span>
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </span>
+                {isDevUsername(post.username) && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
+                    DEV
+                  </span>
+                )}
+                <span className="text-xs text-muted2">
+                  @{post.username}
+                  <span className="mx-1">·</span>
+                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                </span>
+              </Link>
             </div>
 
             {/* Match line with rating on the right */}
