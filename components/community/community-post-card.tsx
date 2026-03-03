@@ -120,7 +120,13 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
   }
 
   return (
-    <article className="rounded-card bg-surface2 border border-border overflow-hidden">
+    <article
+      className="rounded-card bg-surface2 border border-border overflow-hidden cursor-pointer"
+      onClick={() => {
+        // Navigate to detailed post view when clicking the card
+        router.push(`/community/${post.id}`);
+      }}
+    >
       {/* Header: avatar + username/handle/time in one line */}
       <div className="p-4 pb-3">
         <div className="flex items-start gap-3">
@@ -185,7 +191,10 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
       <div className="flex items-center gap-6 px-4 py-2.5 text-muted">
         <button
           type="button"
-          onClick={() => setShowComments((s) => !s)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowComments((s) => !s);
+          }}
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
         >
           <CommentIcon className="w-4 h-4" />
@@ -193,7 +202,10 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         </button>
         <button
           type="button"
-          onClick={handleLike}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleLike();
+          }}
           disabled={!currentUserId}
           className={`flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0 transform ${
             justLiked && liked ? "scale-110" : ""
@@ -209,7 +221,10 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         </button>
         <button
           type="button"
-          onClick={handleShare}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleShare();
+          }}
           className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors ml-auto"
           aria-label="Copy link"
         >
