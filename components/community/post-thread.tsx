@@ -57,7 +57,7 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
 
   function autoResize(el: HTMLTextAreaElement | null) {
     if (!el) return;
-    el.style.height = "0px";
+    el.style.height = "auto";
     el.style.height = `${el.scrollHeight}px`;
   }
 
@@ -182,8 +182,24 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
             )}
           </div>
           {replyForId === c.id && currentUserId && (
-            <form onSubmit={handleReplySubmit} className="mt-2 flex gap-2">
-              <div className="relative flex-1 min-w-0">
+            <div className="mt-2 space-y-1">
+              <p className="text-[0.75rem] text-muted">
+                Replying to{" "}
+                <Link href={`/users/${c.username}`} className="text-green hover:underline">
+                  @{c.username}
+                </Link>
+              </p>
+              <form onSubmit={handleReplySubmit} className="flex gap-2">
+                {currentUserAvatarUrl ? (
+                  <span
+                    className="w-8 h-8 rounded-full bg-surface3 bg-cover bg-center shrink-0 border border-border"
+                    style={{ backgroundImage: `url(${currentUserAvatarUrl})` }}
+                    aria-hidden
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-surface3 shrink-0" aria-hidden />
+                )}
+                <div className="relative flex-1 min-w-0">
                 <textarea
                   ref={replyTextareaRef}
                   value={replyBody}
@@ -195,20 +211,21 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
                   maxLength={180}
                   placeholder="Write a reply"
                   rows={1}
-                  className="flex-1 w-full pr-12 px-3 py-2 rounded-2xl bg-surface3 border border-border text-white text-[0.875rem] placeholder:text-muted focus:outline-none focus:border-border2 resize-none leading-snug"
+                  className="flex-1 w-full pr-12 px-3 py-2 rounded-2xl bg-surface3 border border-border text-white text-[0.875rem] placeholder:text-muted focus:outline-none focus:border-border2 resize-none leading-snug overflow-hidden"
                 />
-                <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
                   <ReviewCharDial value={replyBody.length} max={180} size={32} />
                 </div>
-              </div>
-              <button
-                type="submit"
-                disabled={submittingReply || !replyBody.trim()}
-                className="px-3 py-2 rounded-full bg-muted text-white text-[0.75rem] font-semibold hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {submittingReply ? "…" : "Reply"}
-              </button>
-            </form>
+                </div>
+                <button
+                  type="submit"
+                  disabled={submittingReply || !replyBody.trim()}
+                  className="px-3 py-2 rounded-full bg-green text-white text-[0.75rem] font-semibold hover:bg-green/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {submittingReply ? "…" : "Reply"}
+                </button>
+              </form>
+            </div>
           )}
           {c.children.length > 0 && (
             <ul className="mt-3 space-y-3 border-l border-border/60 pl-5">
@@ -247,16 +264,16 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
                   placeholder="Post your reply"
                   maxLength={180}
                   rows={1}
-                  className="flex-1 w-full pr-12 px-3 py-2.5 rounded-2xl bg-surface3 border border-border text-white text-[0.9375rem] placeholder:text-muted focus:outline-none focus:border-border2 resize-none leading-snug"
+                  className="flex-1 w-full pr-12 px-3 py-2.5 rounded-2xl bg-surface3 border border-border text-white text-[0.9375rem] placeholder:text-muted focus:outline-none focus:border-border2 resize-none leading-snug overflow-hidden"
                 />
-                <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center">
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
                   <ReviewCharDial value={rootBody.length} max={180} size={32} />
                 </div>
               </div>
               <button
                 type="submit"
                 disabled={submittingRoot || !rootBody.trim()}
-                className="px-4 py-2.5 rounded-full bg-muted text-white text-[0.8125rem] font-semibold hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2.5 rounded-full bg-green text-white text-[0.8125rem] font-semibold hover:bg-green/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {submittingRoot ? "…" : "Reply"}
               </button>

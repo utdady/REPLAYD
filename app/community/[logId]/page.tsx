@@ -31,10 +31,10 @@ export default async function CommunityPostPage({ params }: CommunityPostPagePro
   return (
     <div className="pt-20 md:pt-24 min-h-screen">
       <div className="max-w-2xl mx-auto px-4 pb-24">
-        <div className="flex items-center gap-4 py-4">
+        <div className="flex items-baseline gap-3 py-4">
           <Link
             href="/community"
-            className="text-muted hover:text-white text-lg font-medium leading-none pb-1"
+            className="text-muted hover:text-white text-xl font-medium leading-none"
             aria-label="Back to Community"
           >
             ←
