@@ -124,19 +124,19 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — items-center with explicit line-height for alignment */}
-      <div className="flex items-center justify-between gap-4 bg-green text-black px-4 py-3">
+      {/* Green match header bar — items-center, no leading-none so text and stars align naturally */}
+      <div className="flex items-center justify-between gap-4 bg-green text-black px-4 py-2.5">
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-none"
+          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
         >
           {matchLine}
         </Link>
         {post.rating != null && (
-          <span className="flex shrink-0 items-center leading-none">
+          <div className="flex shrink-0 items-center">
             <ReplaydStars value={post.rating} size="md" />
-          </span>
+          </div>
         )}
       </div>
 
