@@ -101,10 +101,10 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
     if (result.ok) {
       setLiked(result.liked);
       setLikeCount((c) => (result.liked ? c + 1 : c - 1));
-      if (result.liked) {
-        setJustLiked(true);
-        setTimeout(() => setJustLiked(false), 180);
-      }
+       if (result.liked) {
+         setJustLiked(true);
+         setTimeout(() => setJustLiked(false), 180);
+       }
       onLikeToggle?.();
     }
   }
@@ -124,8 +124,11 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — centered alignment, even padding */}
-      <div className="flex items-center justify-between gap-4 bg-green text-black px-4 py-2.5">
+      {/* Green match header bar — compact vertical padding, stars with stroke + shadow */}
+      <div
+        className="flex items-baseline justify-between gap-4 bg-green text-black"
+        style={{ padding: "0.45rem 1rem 0.35rem" }}
+      >
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
