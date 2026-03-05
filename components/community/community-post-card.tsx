@@ -132,13 +132,13 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-semibold text-black leading-tight hover:opacity-80"
+          className="flex-1 min-w-0 truncate text-[1rem] font-semibold text-black leading-tight hover:opacity-80"
         >
           {matchLine}
         </Link>
         {post.rating != null && (
           <span className="flex shrink-0 items-center leading-none">
-            <ReplaydStars value={post.rating} size="md" />
+            <ReplaydStars value={post.rating} size="lg" />
           </span>
         )}
       </div>
