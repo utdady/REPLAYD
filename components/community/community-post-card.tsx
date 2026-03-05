@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { StarRating } from "@/components/ui/star-rating";
 import { toggleLogLike } from "@/app/actions/match";
 import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
@@ -77,6 +76,26 @@ function LinkIcon({ className }: { className?: string }) {
   );
 }
 
+/** Match header stars: Unicode ★ with black stroke and shadow to match reference design */
+function HeaderStars({ value }: { value: number }) {
+  const filled = Math.min(5, Math.max(0, Math.round(value)));
+  const starStyle: React.CSSProperties = {
+    color: "var(--gold)",
+    WebkitTextStroke: "1px var(--black)",
+    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
+    filter: "drop-shadow(1.5px 1.5px 2px rgba(0, 0, 0, 0.4))",
+  };
+  return (
+    <div className="flex shrink-0 items-center gap-[3px]" aria-hidden>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className="text-base leading-none" style={starStyle}>
+          {i <= filled ? "★" : "☆"}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export interface CommunityPostCardProps {
   post: CommunityFeedItem;
   currentUserId: string | null;
@@ -124,8 +143,11 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar */}
-      <div className="flex items-center justify-between gap-4 py-2.5 px-4 bg-green text-black">
+      {/* Green match header bar — match reference: padding 0.65rem 1rem, stars with stroke + shadow */}
+      <div
+        className="flex items-center justify-between gap-4 bg-green text-black"
+        style={{ padding: "0.65rem 1rem" }}
+      >
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
@@ -133,11 +155,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         >
           {matchLine}
         </Link>
-        {post.rating != null && (
-          <div className="shrink-0">
-            <StarRating value={post.rating} size="md" readonly />
-          </div>
-        )}
+        {post.rating != null && <HeaderStars value={post.rating} />}
       </div>
 
       {/* Post body: avatar + user line + review */}
