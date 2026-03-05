@@ -121,29 +121,42 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
     <article
       className="rounded-card bg-surface2 border border-border overflow-hidden cursor-pointer"
       onClick={() => {
-        // Navigate to detailed post view when clicking the card
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Header: avatar + username/handle/time in one line */}
-      <div className="p-4 pb-3">
+      {/* Green match header bar */}
+      <div className="flex items-center justify-between gap-4 py-2.5 px-4 bg-green text-black">
+        <Link
+          href={`/matches/${post.match_id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
+        >
+          {matchLine}
+        </Link>
+        {post.rating != null && (
+          <div className="shrink-0">
+            <StarRating value={post.rating} size="md" readonly />
+          </div>
+        )}
+      </div>
+
+      {/* Post body: avatar + user line + review */}
+      <div className="p-4">
         <div className="flex items-start gap-3">
           <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
             <span
-              className="block w-11 h-11 rounded-full bg-surface3 bg-cover bg-center border border-border"
+              className="block w-12 h-12 rounded-full bg-surface3 bg-cover bg-center border border-border"
               style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
               aria-hidden
             />
           </Link>
-          
           <div className="min-w-0 flex-1">
-            {/* Single line: display name, @username · time (forced onto one line) */}
-            <div className="text-sm mb-1 whitespace-nowrap">
+            <div className="flex items-center gap-2 flex-wrap mb-0.5">
               <Link
                 href={`/users/${post.username}`}
                 className="inline-flex items-center gap-1.5 hover:text-green"
               >
-                <span className="font-semibold text-white shrink-0">
+                <span className="text-base font-semibold text-white shrink-0">
                   {post.username}
                 </span>
                 {isDevUsername(post.username) && (
@@ -151,30 +164,13 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
                     DEV
                   </span>
                 )}
-                <span className="text-xs text-muted2">
-                  @{post.username}
-                  <span className="mx-1">·</span>
-                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                </span>
               </Link>
+              <span className="text-[0.8125rem] text-muted2">
+                @{post.username}
+                <span className="mx-1">·</span>
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </span>
             </div>
-
-            {/* Match line with rating on the right */}
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <Link
-                href={`/matches/${post.match_id}`}
-                className="text-sm text-muted hover:text-green truncate flex-1 min-w-0"
-              >
-                {matchLine}
-              </Link>
-              {post.rating != null && (
-                <div className="shrink-0">
-                  <StarRating value={post.rating} size="sm" readonly />
-                </div>
-              )}
-            </div>
-
-            {/* Review text */}
             {post.review ? (
               <p className="text-[0.9375rem] text-white leading-[1.5] whitespace-pre-wrap break-words">
                 {post.review}
