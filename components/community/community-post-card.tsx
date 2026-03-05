@@ -124,15 +124,15 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — compact vertical padding, stars with stroke + shadow */}
+      {/* Green match header bar — compact, balanced padding, stars with stroke + shadow */}
       <div
         className="flex items-baseline justify-between gap-4 bg-green text-black"
-        style={{ padding: "0.45rem 1rem 0.35rem" }}
+        style={{ padding: "0.35rem 1rem" }}
       >
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
+          className="flex-1 min-w-0 truncate text-[0.9375rem] font-semibold text-black hover:opacity-80"
         >
           {matchLine}
         </Link>
