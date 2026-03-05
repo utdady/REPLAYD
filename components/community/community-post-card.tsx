@@ -124,17 +124,17 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — MAXIMUM space reduction */}
-      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "0.5rem", paddingBottom: "0.125rem" }}>
+      {/* Green match header bar — nuclear: zero bottom padding, -mb-2 */}
+      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "0.5rem", paddingBottom: "0" }}>
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-none -mb-1.5"
+          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-none -mb-2"
         >
           {matchLine}
         </Link>
         {post.rating != null && (
-          <div className="flex shrink-0 leading-none -mb-1.5">
+          <div className="flex shrink-0 leading-none -mb-2">
             <ReplaydStars value={post.rating} size="md" />
           </div>
         )}
