@@ -83,6 +83,7 @@ export function StarRating({
         const filled = display >= star;
         const half = display >= star - 0.5 && display < star;
         const uniqueId = `${baseId}-${star}`;
+        const strokeW = size === "sm" ? 0.35 : size === "md" ? 0.45 : 0.55;
         return (
           <div key={star} className="relative flex-shrink-0 pointer-events-none" style={{ width: px, height: px }}>
             <svg
@@ -91,6 +92,9 @@ export function StarRating({
               height={px}
               className="block"
               aria-hidden
+              style={{
+                filter: "drop-shadow(1.5px 1.5px 2px rgba(0, 0, 0, 0.4))",
+              }}
             >
               <defs>
                 <linearGradient id={`half-${uniqueId}`} x1="0%" x2="100%" y1="0%" y2="0%">
@@ -101,6 +105,9 @@ export function StarRating({
               <path
                 d="M10 1l2.5 6.5L19 8l-5.5 4.5L14 19l-4-2.5L6 19l.5-6.5L1 8l6.5-.5L10 1z"
                 fill={filled ? "var(--gold)" : half ? `url(#half-${uniqueId})` : "var(--border)"}
+                stroke="var(--black)"
+                strokeWidth={strokeW}
+                strokeLinejoin="round"
               />
             </svg>
           </div>

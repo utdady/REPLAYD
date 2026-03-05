@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { StarRating } from "@/components/ui/star-rating";
+import { ReplaydStars } from "@/components/ui/replayd-stars";
 
 export interface MatchRatingsBoxProps {
   distribution: Record<number, number>;
@@ -44,7 +44,7 @@ export function MatchRatingsBox({ distribution, average, totalCount, matchId, on
       {average != null && (
         <div className="flex items-center gap-2 mb-4">
           <span className="text-lg font-mono text-muted">{average.toFixed(1)}</span>
-          <StarRating value={average} size="sm" readonly />
+          <ReplaydStars value={average} size="sm" />
         </div>
       )}
       {showLogCta && (onLogClick ? (

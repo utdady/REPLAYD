@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toggleLogLike } from "@/app/actions/match";
 import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
+import { ReplaydStars } from "@/components/ui/replayd-stars";
 
 // Icons inherit color from parent via currentColor
 function CommentIcon({ className }: { className?: string }) {
@@ -76,26 +77,6 @@ function LinkIcon({ className }: { className?: string }) {
   );
 }
 
-/** Match header stars: Unicode ★ with black stroke and shadow to match reference design */
-function HeaderStars({ value }: { value: number }) {
-  const filled = Math.min(5, Math.max(0, Math.round(value)));
-  const starStyle: React.CSSProperties = {
-    color: "var(--gold)",
-    WebkitTextStroke: "1px var(--black)",
-    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)",
-    filter: "drop-shadow(1.5px 1.5px 2px rgba(0, 0, 0, 0.4))",
-  };
-  return (
-    <div className="flex shrink-0 items-center gap-[3px]" aria-hidden>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className="text-base leading-none" style={starStyle}>
-          {i <= filled ? "★" : "☆"}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export interface CommunityPostCardProps {
   post: CommunityFeedItem;
   currentUserId: string | null;
@@ -151,11 +132,15 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
+          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black underline decoration-black/50 hover:decoration-black leading-none py-0.5"
         >
           {matchLine}
         </Link>
-        {post.rating != null && <HeaderStars value={post.rating} />}
+        {post.rating != null && (
+          <span className="flex shrink-0 items-center leading-none">
+            <ReplaydStars value={post.rating} size="md" />
+          </span>
+        )}
       </div>
 
       {/* Post body: avatar + user line + review */}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { StarRating } from "@/components/ui/star-rating";
+import { ReplaydStars } from "@/components/ui/replayd-stars";
 
 export interface LogFeedItemProps {
   username: string;
@@ -37,7 +37,7 @@ export function LogFeedItem({
             {username}
           </Link>
           {rating != null ? (
-            <StarRating value={rating} size="sm" readonly />
+            <ReplaydStars value={rating} size="sm" />
           ) : null}
         </div>
         {reviewSnippet ? (
