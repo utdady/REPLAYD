@@ -104,8 +104,8 @@ export function StarRating({
               </defs>
               <path
                 d="M10 1l2.5 6.5L19 8l-5.5 4.5L14 19l-4-2.5L6 19l.5-6.5L1 8l6.5-.5L10 1z"
-                fill={filled ? "var(--gold)" : half ? `url(#half-${uniqueId})` : "var(--border)"}
-                stroke="var(--black)"
+                fill={filled ? "var(--gold)" : half ? `url(#half-${uniqueId})` : "transparent"}
+                stroke={filled || half ? "var(--black)" : "var(--gold)"}
                 strokeWidth={strokeW}
                 strokeLinejoin="round"
               />
