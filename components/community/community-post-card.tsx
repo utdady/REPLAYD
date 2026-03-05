@@ -124,17 +124,17 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — baseline aligned, extra tight padding */}
-      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 py-1.5">
+      {/* Green match header bar — baseline aligned, ultra-tight padding */}
+      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4" style={{ paddingTop: "0.375rem", paddingBottom: "0.25rem" }}>
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-tight"
+          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-tight -mb-1"
         >
           {matchLine}
         </Link>
         {post.rating != null && (
-          <div className="flex shrink-0 leading-tight -mb-0.5">
+          <div className="flex shrink-0 leading-tight -mb-1">
             <ReplaydStars value={post.rating} size="md" />
           </div>
         )}
