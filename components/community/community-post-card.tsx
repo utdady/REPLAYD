@@ -124,8 +124,8 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — larger text/stars with balanced padding */}
-      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "0.625rem", paddingBottom: "0.375rem" }}>
+      {/* Green match header bar — visually centered with more top padding */}
+      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "0.75rem", paddingBottom: "0.5rem" }}>
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
