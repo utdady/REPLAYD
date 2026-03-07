@@ -124,18 +124,18 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — FIXED HEIGHT, padding so text isn't clipped and visually centered */}
-      <div className="relative bg-green text-black" style={{ height: "2.5rem" }}>
-        <div className="absolute inset-0 flex items-center justify-between px-4" style={{ paddingTop: "0.625rem", paddingBottom: "0.125rem" }}>
+      {/* Green match header bar — COMPACT with scaled stars */}
+      <div className="relative bg-green text-black overflow-hidden" style={{ height: "1.875rem" }}>
+        <div className="absolute inset-0 flex items-center justify-between px-4">
           <Link
             href={`/matches/${post.match_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-tight"
+            className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
           >
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex items-center shrink-0 ml-4">
+            <div className="flex items-center shrink-0 ml-4" style={{ transform: "scale(0.85)", transformOrigin: "center right" }}>
               <ReplaydStars value={post.rating} size="sm" />
             </div>
           )}
