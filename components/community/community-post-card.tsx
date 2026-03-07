@@ -124,18 +124,18 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — FIXED HEIGHT with baseline-aligned content */}
+      {/* Green match header bar — FIXED HEIGHT with centered content */}
       <div className="relative bg-green text-black" style={{ height: "2rem" }}>
-        <div className="absolute inset-0 flex items-baseline justify-between px-4" style={{ paddingTop: "0.5rem" }}>
+        <div className="absolute inset-0 flex items-center justify-between px-4">
           <Link
             href={`/matches/${post.match_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
+            className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-none"
           >
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex shrink-0 ml-4">
+            <div className="flex items-center shrink-0 ml-4">
               <ReplaydStars value={post.rating} size="sm" />
             </div>
           )}
