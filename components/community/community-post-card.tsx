@@ -126,7 +126,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
     >
       {/* Green match header bar — COMPACT with scaled stars */}
       <div className="relative bg-green text-black overflow-hidden" style={{ height: "1.875rem" }}>
-        <div className="absolute inset-0 flex items-center justify-between px-4">
+        <div className="absolute inset-0 flex items-center justify-between px-4" style={{ paddingTop: "0.25rem" }}>
           <Link
             href={`/matches/${post.match_id}`}
             onClick={(e) => e.stopPropagation()}
