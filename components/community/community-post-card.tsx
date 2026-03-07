@@ -126,7 +126,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
     >
       {/* Green match header bar — FIXED HEIGHT, padding so text isn't clipped and visually centered */}
       <div className="relative bg-green text-black" style={{ height: "2.5rem" }}>
-        <div className="absolute inset-0 flex items-center justify-between px-4" style={{ paddingTop: "0.5rem", paddingBottom: "0.25rem" }}>
+        <div className="absolute inset-0 flex items-center justify-between px-4" style={{ paddingTop: "0.625rem", paddingBottom: "0.125rem" }}>
           <Link
             href={`/matches/${post.match_id}`}
             onClick={(e) => e.stopPropagation()}
