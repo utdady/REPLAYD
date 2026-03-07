@@ -124,20 +124,22 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — ULTRA compact with negative margins */}
-      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "0.5rem", paddingBottom: "0.125rem" }}>
-        <Link
-          href={`/matches/${post.match_id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80 leading-none -mb-1"
-        >
-          {matchLine}
-        </Link>
-        {post.rating != null && (
-          <div className="flex shrink-0 leading-none -mb-1">
-            <ReplaydStars value={post.rating} size="sm" />
-          </div>
-        )}
+      {/* Green match header bar — FIXED HEIGHT with centered content */}
+      <div className="relative bg-green text-black px-4" style={{ height: "2rem" }}>
+        <div className="absolute inset-0 flex items-center justify-between px-4">
+          <Link
+            href={`/matches/${post.match_id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
+          >
+            {matchLine}
+          </Link>
+          {post.rating != null && (
+            <div className="flex shrink-0 ml-4">
+              <ReplaydStars value={post.rating} size="sm" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Post body: avatar + user line + review */}
