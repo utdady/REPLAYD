@@ -124,9 +124,9 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — FIXED HEIGHT with centered content */}
-      <div className="relative bg-green text-black overflow-visible" style={{ height: "2.25rem" }}>
-        <div className="absolute inset-0 flex items-center justify-between px-4 overflow-visible">
+      {/* Green match header bar — FIXED HEIGHT with padding so text isn't clipped */}
+      <div className="relative bg-green text-black" style={{ height: "2.5rem" }}>
+        <div className="absolute inset-0 flex items-center justify-between px-4 py-1.5">
           <Link
             href={`/matches/${post.match_id}`}
             onClick={(e) => e.stopPropagation()}
