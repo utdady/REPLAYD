@@ -125,7 +125,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
       }}
     >
       {/* Green match header bar — extra top padding only to center content */}
-      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "0.875rem", paddingBottom: "0.5rem" }}>
+      <div className="flex items-baseline justify-between gap-4 bg-green text-black px-4 overflow-hidden" style={{ paddingTop: "1rem", paddingBottom: "0.5rem" }}>
         <Link
           href={`/matches/${post.match_id}`}
           onClick={(e) => e.stopPropagation()}
