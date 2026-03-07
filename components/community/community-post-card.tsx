@@ -125,7 +125,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
       }}
     >
       {/* Green match header bar — FIXED HEIGHT with baseline-aligned content */}
-      <div className="relative bg-green text-black px-4" style={{ height: "2rem" }}>
+      <div className="relative bg-green text-black" style={{ height: "2rem" }}>
         <div className="absolute inset-0 flex items-baseline justify-between px-4" style={{ paddingTop: "0.5rem" }}>
           <Link
             href={`/matches/${post.match_id}`}
