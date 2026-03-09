@@ -135,7 +135,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex shrink-0 ml-4" style={{ marginTop: "0.05rem" }}>
+            <div className="flex shrink-0 ml-4" style={{ marginTop: "0.2rem" }}>
               <ReplaydStars value={post.rating} size="sm" />
             </div>
           )}
