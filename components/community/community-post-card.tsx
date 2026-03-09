@@ -124,7 +124,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — Manual positioning */}
+      {/* Green match header bar — Manual positioning with larger stars */}
       <div className="relative bg-green text-black overflow-hidden" style={{ height: "2rem" }}>
         <div className="absolute inset-0 flex items-start justify-between px-4" style={{ paddingTop: "0.35rem" }}>
           <Link
@@ -135,7 +135,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex shrink-0 ml-4" style={{ marginTop: "0.32rem" }}>
+            <div className="flex shrink-0 ml-4" style={{ marginTop: "0.25rem", transform: "scale(1.1)", transformOrigin: "center right" }}>
               <ReplaydStars value={post.rating} size="sm" />
             </div>
           )}
