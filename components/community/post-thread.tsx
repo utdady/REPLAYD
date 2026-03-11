@@ -139,14 +139,16 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
         </Link>
         <div className="min-w-0 flex-1 pb-1">
           <div className="flex items-baseline gap-0 flex-wrap">
+            <span className="text-[0.8125rem] font-semibold text-white">
+              {c.display_name?.trim() || "NPC"}
+            </span>
             <Link
               href={`/users/${c.username}`}
-              className="text-[0.8125rem] font-semibold text-white hover:text-green"
+              className="text-[0.75rem] text-muted ml-[2px] hover:text-green"
             >
-              {c.display_name?.trim() || "NPC"}
+              @{c.username}
             </Link>
             <span className="text-[0.75rem] text-muted ml-[2px]">
-              @{c.username}
               <span className="mx-1">·</span>
               {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
             </span>

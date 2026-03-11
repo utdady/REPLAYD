@@ -141,7 +141,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         router.push(`/community/${post.id}`);
       }}
     >
-      {/* Green match header bar — Manual positioning with larger stars */}
+      {/* Green match header bar */}
       <div className="relative bg-green text-black overflow-hidden" style={{ height: "2rem" }}>
         <div className="absolute inset-0 flex items-start justify-between px-4" style={{ paddingTop: "0.35rem" }}>
           <Link
@@ -159,39 +159,44 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         </div>
       </div>
 
-      {/* Post body: avatar left, then username @ · time + review (same left as ref) */}
-      <div className={`pt-4 pb-4 ${POST_PADDING_X}`}>
-        <div className="flex items-start gap-3">
+      {/* Post body - X/Twitter style: compact spacing, avatar + inline username */}
+      <div className={`pt-3 pb-2 ${POST_PADDING_X}`}>
+        <div className="flex items-start gap-2.5">
+          {/* Avatar */}
           <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
             <span
-              className="block w-9 h-9 rounded-full bg-surface3 bg-cover bg-center border border-border"
+              className="block w-10 h-10 rounded-full bg-surface3 bg-cover bg-center border border-border"
               style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
               aria-hidden
             />
           </Link>
-          <div className="min-w-0 flex-1 -mt-[2px]">
-            <div className="flex items-baseline gap-0 flex-wrap mb-0.5">
+          
+          {/* Username line + review */}
+          <div className="min-w-0 flex-1">
+            {/* Username header - display name + handle + timestamp on ONE line */}
+            <div className="flex items-baseline gap-1 flex-wrap mb-1">
+              <span className="font-bold text-[0.9375rem] text-white shrink-0">
+                {post.display_name?.trim() || post.username}
+              </span>
               <Link
                 href={`/users/${post.username}`}
-                className="inline-flex items-center gap-1.5 hover:text-green"
+                className="text-[0.9375rem] text-muted shrink-0 hover:text-green"
               >
-                <span className="text-[0.8125rem] font-semibold text-white shrink-0">
-                  {post.display_name?.trim() || "NPC"}
-                </span>
-                {isDevUsername(post.username) && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
-                    DEV
-                  </span>
-                )}
-              </Link>
-              <span className="text-[0.8125rem] text-muted2 ml-[2px]">
                 @{post.username}
-                <span className="mx-1">·</span>
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </Link>
+              <span className="text-[0.9375rem] text-muted shrink-0">
+                · {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </span>
+              {isDevUsername(post.username) && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[0.625rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0 ml-1">
+                  DEV
+                </span>
+              )}
             </div>
+            
+            {/* Review text */}
             {post.review ? (
-              <p className="text-[0.9375rem] text-white leading-[1.5] whitespace-pre-wrap break-words">
+              <p className="text-[0.9375rem] text-white leading-[1.4] whitespace-pre-wrap break-words">
                 {post.review}
               </p>
             ) : null}
@@ -199,19 +204,19 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         </div>
       </div>
 
-      {/* Engagement row — comment/like left-aligned with avatar, share right; same horizontal padding as post body */}
+      {/* Engagement row - X style with even spacing */}
       <div className="border-t border-border/80" />
-      <div className={`flex items-center w-full py-2.5 text-muted ${POST_PADDING_X} gap-6`}>
-        <div className="flex items-center gap-6 shrink-0">
+      <div className={`flex items-center py-2 text-muted ${POST_PADDING_X}`}>
+        <div className="flex items-center gap-12 flex-1">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               router.push(`/community/${post.id}`);
             }}
-            className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
+            className="flex items-center gap-2 text-[0.8125rem] hover:text-white transition-colors"
           >
-            <CommentIcon className="w-5 h-5" />
+            <CommentIcon className="w-[1.125rem] h-[1.125rem]" />
             {post.comment_count > 0 && <span>{post.comment_count}</span>}
           </button>
           <button
@@ -221,35 +226,32 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
               handleLike();
             }}
             disabled={!currentUserId}
-            className={`flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0 transform ${
+            className={`flex items-center gap-2 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors transform ${
               justLiked && liked ? "scale-110" : ""
             }`}
             aria-label={liked ? "Unlike" : "Like"}
           >
             {liked ? (
-              <HeartFilledIcon className="w-5 h-5 text-pink-500" />
+              <HeartFilledIcon className="w-[1.125rem] h-[1.125rem] text-pink-500" />
             ) : (
-              <HeartIcon className="w-5 h-5" />
+              <HeartIcon className="w-[1.125rem] h-[1.125rem]" />
             )}
             {likeCount > 0 && <span>{likeCount}</span>}
           </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleShare();
+            }}
+            className="flex items-center gap-2 text-[0.8125rem] hover:text-white transition-colors ml-auto"
+            aria-label="Copy link"
+          >
+            <LinkIcon className="w-[1.125rem] h-[1.125rem]" />
+            {copied ? <span className="text-green text-xs">Copied!</span> : null}
+          </button>
         </div>
-        <div className="min-w-0 flex-1" aria-hidden />
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleShare();
-          }}
-          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors shrink-0"
-          aria-label="Copy link"
-        >
-          <LinkIcon className="w-5 h-5" />
-          {copied ? <span className="text-green text-xs">Copied!</span> : null}
-        </button>
       </div>
-
-      {/* Comments thread moved to dedicated post page */}
     </article>
   );
 }
