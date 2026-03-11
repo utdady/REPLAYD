@@ -16,10 +16,13 @@ export interface CommunityFeedItem {
   id: string;
   user_id: string;
   username: string;
+  display_name: string | null;
   avatar_url: string | null;
   match_id: number;
   match_title: string;
   competition_name: string;
+  competition_code: string;
+  season_year: number | null;
   home_score: number | null;
   away_score: number | null;
   rating: number | null;
@@ -67,10 +70,13 @@ export async function getCommunityFeed(
         ml.id::text,
         ml.user_id::text,
         p.username,
+        p.display_name,
         p.avatar_url,
         ml.match_id,
         (ht.name || ' v ' || at.name) AS match_title,
         c.name AS competition_name,
+        c.code AS competition_code,
+        EXTRACT(YEAR FROM m.utc_date)::int AS season_year,
         m.home_score,
         m.away_score,
         ml.rating::float,
@@ -83,6 +89,7 @@ export async function getCommunityFeed(
       JOIN profiles p ON p.id = ml.user_id
       JOIN matches m ON m.id = ml.match_id
       JOIN competitions c ON c.id = m.competition_id
+      JOIN seasons s ON s.id = m.season_id
       JOIN teams ht ON ht.id = m.home_team_id
       JOIN teams at ON at.id = m.away_team_id
       LEFT JOIN like_ct lc ON lc.log_id = ml.id
@@ -114,10 +121,13 @@ export async function getCommunityFeed(
       ml.id::text,
       ml.user_id::text,
       p.username,
+      p.display_name,
       p.avatar_url,
       ml.match_id,
       (ht.name || ' v ' || at.name) AS match_title,
       c.name AS competition_name,
+      c.code AS competition_code,
+      EXTRACT(YEAR FROM m.utc_date)::int AS season_year,
       m.home_score,
       m.away_score,
       ml.rating::float,
@@ -130,6 +140,7 @@ export async function getCommunityFeed(
     JOIN profiles p ON p.id = ml.user_id
     JOIN matches m ON m.id = ml.match_id
     JOIN competitions c ON c.id = m.competition_id
+    JOIN seasons s ON s.id = m.season_id
     JOIN teams ht ON ht.id = m.home_team_id
     JOIN teams at ON at.id = m.away_team_id
     LEFT JOIN like_ct lc ON lc.log_id = ml.id
@@ -216,6 +227,7 @@ export interface LogCommentRow {
   id: string;
   user_id: string;
   username: string;
+  display_name: string | null;
   avatar_url: string | null;
   body: string;
   created_at: string;
@@ -231,6 +243,7 @@ export async function getLogComments(logId: string): Promise<LogCommentRow[]> {
       lc.id::text,
       lc.user_id::text,
       p.username,
+      p.display_name,
       p.avatar_url,
       lc.body,
       lc.created_at::text,
@@ -348,6 +361,8 @@ export async function getCommunityPostById(
     ? "EXISTS (SELECT 1 FROM log_likes ll WHERE ll.log_id = ml.id AND ll.user_id = $1)"
     : "false";
 
+  const params = currentUserId ? [currentUserId, logId] : [logId];
+
   const sql = `
     WITH like_ct AS (${likeCounts}),
          comment_ct AS (${commentCounts})
@@ -355,10 +370,13 @@ export async function getCommunityPostById(
       ml.id::text,
       ml.user_id::text,
       p.username,
+      p.display_name,
       p.avatar_url,
       ml.match_id,
       (ht.name || ' v ' || at.name) AS match_title,
       c.name AS competition_name,
+      c.code AS competition_code,
+      EXTRACT(YEAR FROM m.utc_date)::int AS season_year,
       m.home_score,
       m.away_score,
       ml.rating::float,
@@ -371,6 +389,7 @@ export async function getCommunityPostById(
     JOIN profiles p ON p.id = ml.user_id
     JOIN matches m ON m.id = ml.match_id
     JOIN competitions c ON c.id = m.competition_id
+    JOIN seasons s ON s.id = m.season_id
     JOIN teams ht ON ht.id = m.home_team_id
     JOIN teams at ON at.id = m.away_team_id
     LEFT JOIN like_ct lc ON lc.log_id = ml.id
@@ -378,8 +397,6 @@ export async function getCommunityPostById(
     WHERE ml.id = $${currentUserId ? 2 : 1}
     LIMIT 1
   `;
-
-  const params = currentUserId ? [currentUserId, logId] : [logId];
   try {
     const { rows } = await query<CommunityFeedItem & { current_user_liked: boolean }>(sql, params);
     const row = rows[0];

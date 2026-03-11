@@ -145,6 +145,7 @@ interface FDTeamDetail extends FDTeam {
 
 interface FDMatchDetail {
   id: number;
+  utcDate?: string;
   venue: string | null;
   referees: FDReferee[] | null;
   goals: FDGoal[] | null;
@@ -279,6 +280,7 @@ async function upsertMatch(
        last_updated
      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
      ON CONFLICT (id) DO UPDATE SET
+       utc_date      = EXCLUDED.utc_date,
        status        = EXCLUDED.status,
        matchday      = EXCLUDED.matchday,
        home_score    = EXCLUDED.home_score,
@@ -355,10 +357,18 @@ async function upsertMatchDetail(pool: Pool, d: FDMatchDetail) {
   const refereeName =
     d.referees?.find((r) => r.type === "REFEREE")?.name ?? null;
 
-  await pool.query(
-    `UPDATE matches SET venue = $1, referee_name = $2, updated_at = NOW() WHERE id = $3`,
-    [d.venue ?? null, refereeName, d.id]
-  );
+  // Cross-check: API is source of truth for kickoff time; correct DB if present
+  if (d.utcDate) {
+    await pool.query(
+      `UPDATE matches SET utc_date = $1, venue = $2, referee_name = $3, updated_at = NOW() WHERE id = $4`,
+      [d.utcDate, d.venue ?? null, refereeName, d.id]
+    );
+  } else {
+    await pool.query(
+      `UPDATE matches SET venue = $1, referee_name = $2, updated_at = NOW() WHERE id = $3`,
+      [d.venue ?? null, refereeName, d.id]
+    );
+  }
 
   await pool.query(`DELETE FROM match_goals WHERE match_id = $1`, [d.id]);
   const goals = d.goals ?? [];

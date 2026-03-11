@@ -129,8 +129,8 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
 
   function renderComment(c: ThreadedComment, depth = 0) {
     return (
-      <li key={c.id} className="relative flex gap-3">
-        <Link href={`/users/${c.username}`} className="shrink-0 mt-0.5">
+      <li key={c.id} className="relative flex items-start gap-3">
+        <Link href={`/users/${c.username}`} className="shrink-0">
           <span
             className="block w-9 h-9 rounded-full bg-surface3 bg-cover bg-center"
             style={{ backgroundImage: c.avatar_url ? `url(${c.avatar_url})` : undefined }}
@@ -138,14 +138,14 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
           />
         </Link>
         <div className="min-w-0 flex-1 pb-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-baseline gap-0 flex-wrap">
             <Link
               href={`/users/${c.username}`}
               className="text-[0.8125rem] font-semibold text-white hover:text-green"
             >
-              {c.username}
+              {c.display_name?.trim() || "NPC"}
             </Link>
-            <span className="text-[0.75rem] text-muted">
+            <span className="text-[0.75rem] text-muted ml-[2px]">
               @{c.username}
               <span className="mx-1">·</span>
               {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}

@@ -9,6 +9,19 @@ import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
 import { ReplaydStars } from "@/components/ui/replayd-stars";
 
+/** Horizontal padding for post body and action row — keeps avatar, content, and comment icon on same left alignment */
+const POST_PADDING_X = "px-4";
+
+/** Competition code → short label for match header (saves space vs full name) */
+const COMPETITION_ABBREV: Record<string, string> = {
+  PL: "EPL",
+  CL: "UCL",
+  PD: "La Liga",
+  BL1: "BL",
+  SA: "Serie A",
+  FL1: "L1",
+};
+
 // Icons inherit color from parent via currentColor
 function CommentIcon({ className }: { className?: string }) {
   return (
@@ -90,10 +103,14 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
   const [copied, setCopied] = React.useState(false);
   const [justLiked, setJustLiked] = React.useState(false);
 
-  const matchLine =
+  const competitionLabel = COMPETITION_ABBREV[post.competition_code] ?? post.competition_name;
+  const baseMatchLine =
     post.home_score != null && post.away_score != null
-      ? `${post.match_title.replace(" v ", ` ${post.home_score}–${post.away_score} `)} · ${post.competition_name}`
-      : `${post.match_title} · ${post.competition_name}`;
+      ? `${post.match_title.replace(" v ", ` ${post.home_score}–${post.away_score} `)} · ${competitionLabel}`
+      : `${post.match_title} · ${competitionLabel}`;
+
+  const matchLine =
+    post.season_year != null ? `${baseMatchLine} · ${post.season_year}` : baseMatchLine;
 
   async function handleLike() {
     if (!currentUserId) return;
@@ -130,36 +147,36 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           <Link
             href={`/matches/${post.match_id}`}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 min-w-0 truncate text-[0.9375rem] font-medium text-black hover:opacity-80"
+            className="flex-1 min-w-0 truncate text-[0.9375rem] font-semibold text-black hover:opacity-80"
           >
             {matchLine}
           </Link>
           {post.rating != null && (
-            <div className="flex shrink-0 ml-4" style={{ marginTop: "0.25rem", transform: "scale(1.1)", transformOrigin: "center right" }}>
+            <div className="flex shrink-0 ml-4" style={{ marginTop: "0.38rem", transform: "scale(1.3)", transformOrigin: "center right" }}>
               <ReplaydStars value={post.rating} size="sm" />
             </div>
           )}
         </div>
       </div>
 
-      {/* Post body: avatar + user line + review */}
-      <div className="p-4">
+      {/* Post body: avatar left, then username @ · time + review (same left as ref) */}
+      <div className={`pt-4 pb-4 ${POST_PADDING_X}`}>
         <div className="flex items-start gap-3">
           <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
             <span
-              className="block w-12 h-12 rounded-full bg-surface3 bg-cover bg-center border border-border"
+              className="block w-9 h-9 rounded-full bg-surface3 bg-cover bg-center border border-border"
               style={{ backgroundImage: post.avatar_url ? `url(${post.avatar_url})` : undefined }}
               aria-hidden
             />
           </Link>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+          <div className="min-w-0 flex-1 -mt-[2px]">
+            <div className="flex items-baseline gap-0 flex-wrap mb-0.5">
               <Link
                 href={`/users/${post.username}`}
                 className="inline-flex items-center gap-1.5 hover:text-green"
               >
-                <span className="text-base font-semibold text-white shrink-0">
-                  {post.username}
+                <span className="text-[0.8125rem] font-semibold text-white shrink-0">
+                  {post.display_name?.trim() || "NPC"}
                 </span>
                 {isDevUsername(post.username) && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[.6rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0">
@@ -167,7 +184,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
                   </span>
                 )}
               </Link>
-              <span className="text-[0.8125rem] text-muted2">
+              <span className="text-[0.8125rem] text-muted2 ml-[2px]">
                 @{post.username}
                 <span className="mx-1">·</span>
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
@@ -182,46 +199,49 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
         </div>
       </div>
 
-      {/* Engagement row — divider then icons */}
+      {/* Engagement row — comment/like left-aligned with avatar, share right; same horizontal padding as post body */}
       <div className="border-t border-border/80" />
-      <div className="flex items-center gap-6 px-4 py-2.5 text-muted">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            router.push(`/community/${post.id}`);
-          }}
-          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
-        >
-          <CommentIcon className="w-5 h-5" />
-          {post.comment_count > 0 && <span>{post.comment_count}</span>}
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleLike();
-          }}
-          disabled={!currentUserId}
-          className={`flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0 transform ${
-            justLiked && liked ? "scale-110" : ""
-          }`}
-          aria-label={liked ? "Unlike" : "Like"}
-        >
-          {liked ? (
-            <HeartFilledIcon className="w-5 h-5 text-pink-500" />
-          ) : (
-            <HeartIcon className="w-5 h-5" />
-          )}
-          {likeCount > 0 && <span>{likeCount}</span>}
-        </button>
+      <div className={`flex items-center w-full py-2.5 text-muted ${POST_PADDING_X} gap-6`}>
+        <div className="flex items-center gap-6 shrink-0">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/community/${post.id}`);
+            }}
+            className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors min-w-0"
+          >
+            <CommentIcon className="w-5 h-5" />
+            {post.comment_count > 0 && <span>{post.comment_count}</span>}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLike();
+            }}
+            disabled={!currentUserId}
+            className={`flex items-center gap-1.5 text-[0.8125rem] hover:text-white disabled:opacity-60 disabled:cursor-not-allowed transition-colors min-w-0 transform ${
+              justLiked && liked ? "scale-110" : ""
+            }`}
+            aria-label={liked ? "Unlike" : "Like"}
+          >
+            {liked ? (
+              <HeartFilledIcon className="w-5 h-5 text-pink-500" />
+            ) : (
+              <HeartIcon className="w-5 h-5" />
+            )}
+            {likeCount > 0 && <span>{likeCount}</span>}
+          </button>
+        </div>
+        <div className="min-w-0 flex-1" aria-hidden />
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             handleShare();
           }}
-          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors ml-auto"
+          className="flex items-center gap-1.5 text-[0.8125rem] hover:text-white transition-colors shrink-0"
           aria-label="Copy link"
         >
           <LinkIcon className="w-5 h-5" />
