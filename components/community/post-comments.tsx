@@ -93,9 +93,9 @@ export function PostComments({
                     {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
                   </span>
                 </div>
-                <p className="text-[0.9375rem] text-white mt-0.5 leading-snug whitespace-pre-wrap break-words">
+                <span className="block text-[0.9375rem] text-white leading-none whitespace-pre-wrap break-words -mt-4">
                   {c.body}
-                </p>
+                </span>
               </div>
             </li>
           ))}

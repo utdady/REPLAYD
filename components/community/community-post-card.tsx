@@ -9,8 +9,10 @@ import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
 import { ReplaydStars } from "@/components/ui/replayd-stars";
 
-/** Horizontal padding for post body and action row — keeps avatar, content, and comment icon on same left alignment */
+/** Horizontal padding for post body and action row */
 const POST_PADDING_X = "px-4";
+/** Left indent so engagement row aligns with review text (avatar w-10 + gap-2.5 + body pl-4) */
+const ENGAGEMENT_INDENT = "pl-[4.25rem]";
 
 /** Competition code → short label for match header (saves space vs full name) */
 const COMPETITION_ABBREV: Record<string, string> = {
@@ -160,7 +162,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
       </div>
 
       {/* Post body - X/Twitter style: compact spacing, avatar + inline username */}
-      <div className={`pt-3 pb-2 ${POST_PADDING_X}`}>
+      <div className={`pt-3 pb-1 ${POST_PADDING_X}`}>
         <div className="flex items-start gap-2.5">
           {/* Avatar */}
           <Link href={`/users/${post.username}`} className="shrink-0" aria-label={`${post.username} profile`}>
@@ -174,7 +176,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           {/* Username line + review */}
           <div className="min-w-0 flex-1">
             {/* Username header - display name + handle + timestamp on ONE line */}
-            <div className="flex items-baseline gap-1 flex-wrap mb-1">
+            <div className="flex items-baseline gap-1 flex-wrap">
               <span className="font-bold text-[0.9375rem] text-white shrink-0">
                 {post.display_name?.trim() || post.username}
               </span>
@@ -194,19 +196,18 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
               )}
             </div>
             
-            {/* Review text */}
+            {/* Review text - negative margin pulls up to sit right under username line */}
             {post.review ? (
-              <p className="text-[0.9375rem] text-white leading-[1.4] whitespace-pre-wrap break-words">
+              <span className="block text-[0.9375rem] text-white leading-none whitespace-pre-wrap break-words -mt-4">
                 {post.review}
-              </p>
+              </span>
             ) : null}
           </div>
         </div>
       </div>
 
-      {/* Engagement row - X style with even spacing */}
-      <div className="border-t border-border/80" />
-      <div className={`flex items-center py-2 text-muted ${POST_PADDING_X}`}>
+      {/* Engagement row - indented to align with review text */}
+      <div className={`flex items-center py-1 text-muted ${ENGAGEMENT_INDENT} pr-4`}>
         <div className="flex items-center gap-12 flex-1">
           <button
             type="button"
