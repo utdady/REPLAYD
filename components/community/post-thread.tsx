@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
 import {
   getLogComments,
   createLogComment,
@@ -10,6 +9,7 @@ import {
   deleteLogComment,
   type LogCommentRow,
 } from "@/app/actions/community";
+import { formatTimeAgo } from "@/lib/format-time-ago";
 import { ReviewCharDial } from "@/components/ui/review-char-dial";
 
 export interface PostThreadProps {
@@ -139,21 +139,21 @@ export function PostThread({ logId, currentUserId, currentUserAvatarUrl }: PostT
         </Link>
         <div className="min-w-0 flex-1 pb-1">
           <div className="flex items-baseline gap-0 flex-wrap">
-            <span className="text-[0.8125rem] font-semibold text-white">
+            <span className="text-[1rem] font-extrabold text-white">
               {c.display_name?.trim() || "NPC"}
             </span>
             <Link
               href={`/users/${c.username}`}
-              className="text-[0.75rem] text-muted ml-[2px] hover:text-green"
+              className="text-[0.875rem] text-muted ml-[2px] hover:text-green"
             >
               @{c.username}
             </Link>
-            <span className="text-[0.75rem] text-muted ml-[2px]">
+            <span className="text-[0.875rem] text-muted ml-[2px]">
               <span className="mx-1">·</span>
-              {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+              {formatTimeAgo(c.created_at)}
             </span>
           </div>
-          <span className="block text-[0.9375rem] text-white leading-none whitespace-pre-wrap break-words -mt-4">
+          <span className="block text-[0.875rem] text-white leading-none whitespace-pre-wrap break-words -mt-4">
             {c.body}
           </span>
           <div className="mt-1 flex items-center gap-4 text-[0.75rem] text-muted">

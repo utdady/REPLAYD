@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { getLogComments, createLogComment, type LogCommentRow } from "@/app/actions/community";
-import { formatDistanceToNow } from "date-fns";
+import { formatTimeAgo } from "@/lib/format-time-ago";
 
 export interface PostCommentsProps {
   logId: string;
@@ -79,21 +79,21 @@ export function PostComments({
               </Link>
               <div className="min-w-0 flex-1 pb-1">
                 <div className="flex items-baseline gap-0 flex-wrap">
-                  <span className="text-[0.8125rem] font-semibold text-white">
+                  <span className="text-[1rem] font-extrabold text-white">
                     {c.display_name?.trim() || "NPC"}
                   </span>
                   <Link
                     href={`/users/${c.username}`}
-                    className="text-[0.75rem] text-muted ml-[2px] hover:text-green"
+                    className="text-[0.875rem] text-muted ml-[2px] hover:text-green"
                   >
                     @{c.username}
                   </Link>
-                  <span className="text-[0.75rem] text-muted ml-[2px]">
+                  <span className="text-[0.875rem] text-muted ml-[2px]">
                     <span className="mx-1">·</span>
-                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                    {formatTimeAgo(c.created_at)}
                   </span>
                 </div>
-                <span className="block text-[0.9375rem] text-white leading-none whitespace-pre-wrap break-words -mt-4">
+                <span className="block text-[0.875rem] text-white leading-none whitespace-pre-wrap break-words -mt-4">
                   {c.body}
                 </span>
               </div>

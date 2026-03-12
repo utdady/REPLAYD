@@ -3,11 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
 import { toggleLogLike } from "@/app/actions/match";
 import type { CommunityFeedItem } from "@/app/actions/community";
 import { isDevUsername } from "@/lib/follow-the-goat";
 import { ReplaydStars } from "@/components/ui/replayd-stars";
+import { formatTimeAgo } from "@/lib/format-time-ago";
 
 /** Horizontal padding for post body and action row */
 const POST_PADDING_X = "px-4";
@@ -177,7 +177,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
           <div className="min-w-0 flex-1">
             {/* Username header - display name + handle + timestamp on ONE line */}
             <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="font-bold text-[0.9375rem] text-white shrink-0">
+              <span className="font-extrabold text-[1.0625rem] text-white shrink-0">
                 {post.display_name?.trim() || post.username}
               </span>
               <Link
@@ -187,7 +187,7 @@ export function CommunityPostCard({ post, currentUserId, onLikeToggle }: Communi
                 @{post.username}
               </Link>
               <span className="text-[0.9375rem] text-muted shrink-0">
-                · {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                · {formatTimeAgo(post.created_at)}
               </span>
               {isDevUsername(post.username) && (
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[0.625rem] font-semibold tracking-wider uppercase bg-green/20 text-green border border-green/40 shrink-0 ml-1">
