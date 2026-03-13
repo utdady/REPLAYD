@@ -1,12 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { startOfDay, format } from "date-fns";
 import { Chip } from "@/components/ui/chip";
 import { DateStrip } from "@/components/feed/date-strip";
 import { SectionEyebrow } from "@/components/layout/section-eyebrow";
+import { F1LiveRaceCard } from "@/components/feed/f1-live-race-card";
+import { F1SessionCard } from "@/components/feed/f1-session-card";
+import { F1NextRaceCard } from "@/components/feed/f1-next-race-card";
+import { F1StandingsTable } from "@/components/feed/f1-standings-table";
+import {
+  findRaceByDate,
+  getRaceResults,
+  getQualifyingResults,
+  getNextRace,
+  getDriverStandings,
+  getConstructorStandings,
+  getLiveRaceData,
+  type F1Race,
+  type DriverStanding,
+  type ConstructorStanding,
+  type F1Result,
+} from "@/app/actions/f1";
 
-/** F1 standings: Drivers Championship and Constructors Championship (same pattern as football standings). */
 const F1_VIEWS = ["Drivers Championship", "Constructors Championship"] as const;
 export type F1View = (typeof F1_VIEWS)[number];
 
@@ -19,7 +35,84 @@ export function F1Section() {
   const [showStandings, setShowStandings] = useState(false);
   const [activeView, setActiveView] = useState<F1View>("Drivers Championship");
 
+  const [raceRound, setRaceRound] = useState<string | null>(null);
+  const [raceResults, setRaceResults] = useState<{ race: F1Race; results: F1Result[] } | null>(null);
+  const [qualifyingResults, setQualifyingResults] = useState<{
+    race: F1Race;
+    results: import("@/app/actions/f1").F1QualifyingResult[];
+  } | null>(null);
+  const [nextRace, setNextRace] = useState<F1Race | null>(null);
+  const [driverStandings, setDriverStandings] = useState<DriverStanding[]>([]);
+  const [constructorStandings, setConstructorStandings] = useState<ConstructorStanding[]>([]);
+  const [isLiveRace, setIsLiveRace] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const isToday = selectedDate.getTime() === today.getTime();
+
+  useEffect(() => {
+    async function checkLiveRace() {
+      if (isToday && !showStandings) {
+        const liveData = await getLiveRaceData();
+        setIsLiveRace(!!liveData);
+      } else {
+        setIsLiveRace(false);
+      }
+    }
+    checkLiveRace();
+  }, [isToday, showStandings]);
+
+  useEffect(() => {
+    async function fetchRaceData() {
+      if (showStandings) return;
+      setLoading(true);
+      const round = await findRaceByDate(selectedDate);
+      setRaceRound(round);
+
+      if (round) {
+        const [race, quali] = await Promise.all([
+          getRaceResults(round),
+          getQualifyingResults(round),
+        ]);
+        setRaceResults(race);
+        setQualifyingResults(quali);
+      } else {
+        setRaceResults(null);
+        setQualifyingResults(null);
+      }
+
+      const next = await getNextRace();
+      setNextRace(next);
+      setLoading(false);
+    }
+
+    fetchRaceData();
+  }, [selectedDate, showStandings]);
+
+  useEffect(() => {
+    async function fetchStandings() {
+      if (!showStandings) return;
+      setLoading(true);
+      const [drivers, constructors] = await Promise.all([
+        getDriverStandings(),
+        getConstructorStandings(),
+      ]);
+      setDriverStandings(drivers);
+      setConstructorStandings(constructors);
+      setLoading(false);
+    }
+
+    fetchStandings();
+  }, [showStandings]);
+
+  const fastestLapResult =
+    raceResults?.results?.find((r) => r.FastestLap?.rank === "1");
+  const fastestLap =
+    fastestLapResult?.FastestLap != null
+      ? {
+          driver: `${fastestLapResult.Driver.givenName} ${fastestLapResult.Driver.familyName}`,
+          time: fastestLapResult.FastestLap.Time.time,
+        }
+      : undefined;
 
   return (
     <div className="pt-2 pb-8">
@@ -41,19 +134,73 @@ export function F1Section() {
           </button>
         </div>
       </div>
-      {!showStandings ? (
-        <div className="px-4 text-center text-muted py-12">Coming soon</div>
+
+      {loading ? (
+        <div className="px-4 text-center text-muted py-12">Loading…</div>
+      ) : !showStandings ? (
+        <>
+          {isLiveRace && <F1LiveRaceCard />}
+
+          {!isLiveRace && nextRace != null && !raceRound && (
+            <F1NextRaceCard
+              raceName={nextRace.raceName}
+              circuit={nextRace.Circuit.circuitName}
+              country={nextRace.Circuit.Location.country}
+              date={nextRace.date}
+              time={nextRace.time}
+            />
+          )}
+
+          {raceRound != null ? (
+            <>
+              {qualifyingResults != null && (
+                <F1SessionCard
+                  title="Qualifying"
+                  time={qualifyingResults.race.Qualifying?.time ?? "—"}
+                  results={qualifyingResults.results}
+                  completed
+                />
+              )}
+              {raceResults != null && (
+                <F1SessionCard
+                  title="Race"
+                  time={raceResults.race.time ?? "—"}
+                  results={raceResults.results}
+                  fastestLap={fastestLap}
+                  completed
+                />
+              )}
+            </>
+          ) : !isLiveRace ? (
+            <div className="px-4 text-center text-muted py-12">
+              No race on this date.
+              {nextRace != null && (
+                <div className="mt-2 text-[0.875rem]">
+                  Next race: {nextRace.raceName} · {format(new Date(nextRace.date), "EEE d MMM")}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </>
       ) : (
-        <div className="px-4">
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-6">
-            {F1_VIEWS.map((view) => (
-              <Chip key={view} active={activeView === view} onClick={() => setActiveView(view)}>
-                {view}
-              </Chip>
-            ))}
+        <>
+          <div className="px-4">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-6">
+              {F1_VIEWS.map((view) => (
+                <Chip key={view} active={activeView === view} onClick={() => setActiveView(view)}>
+                  {view}
+                </Chip>
+              ))}
+            </div>
           </div>
-          <div className="text-center text-muted py-12">Coming soon</div>
-        </div>
+
+          <F1StandingsTable
+            type={activeView === "Drivers Championship" ? "drivers" : "constructors"}
+            standings={
+              activeView === "Drivers Championship" ? driverStandings : constructorStandings
+            }
+          />
+        </>
       )}
     </div>
   );
