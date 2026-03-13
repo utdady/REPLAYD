@@ -46,6 +46,7 @@ export function F1Section() {
   const [constructorStandings, setConstructorStandings] = useState<ConstructorStanding[]>([]);
   const [isLiveRace, setIsLiveRace] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const isToday = selectedDate.getTime() === today.getTime();
 
@@ -65,24 +66,34 @@ export function F1Section() {
     async function fetchRaceData() {
       if (showStandings) return;
       setLoading(true);
-      const round = await findRaceByDate(selectedDate);
-      setRaceRound(round);
+      setError(null);
+      try {
+        const round = await findRaceByDate(selectedDate);
+        setRaceRound(round);
 
-      if (round) {
-        const [race, quali] = await Promise.all([
-          getRaceResults(round),
-          getQualifyingResults(round),
-        ]);
-        setRaceResults(race);
-        setQualifyingResults(quali);
-      } else {
+        if (round) {
+          const [race, quali] = await Promise.all([
+            getRaceResults(round),
+            getQualifyingResults(round),
+          ]);
+          setRaceResults(race);
+          setQualifyingResults(quali);
+        } else {
+          setRaceResults(null);
+          setQualifyingResults(null);
+        }
+
+        const next = await getNextRace();
+        setNextRace(next);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load F1 data");
+        setRaceRound(null);
         setRaceResults(null);
         setQualifyingResults(null);
+        setNextRace(null);
+      } finally {
+        setLoading(false);
       }
-
-      const next = await getNextRace();
-      setNextRace(next);
-      setLoading(false);
     }
 
     fetchRaceData();
@@ -92,13 +103,21 @@ export function F1Section() {
     async function fetchStandings() {
       if (!showStandings) return;
       setLoading(true);
-      const [drivers, constructors] = await Promise.all([
-        getDriverStandings(),
-        getConstructorStandings(),
-      ]);
-      setDriverStandings(drivers);
-      setConstructorStandings(constructors);
-      setLoading(false);
+      setError(null);
+      try {
+        const [drivers, constructors] = await Promise.all([
+          getDriverStandings(),
+          getConstructorStandings(),
+        ]);
+        setDriverStandings(drivers);
+        setConstructorStandings(constructors);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load standings");
+        setDriverStandings([]);
+        setConstructorStandings([]);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchStandings();
@@ -135,7 +154,14 @@ export function F1Section() {
         </div>
       </div>
 
-      {loading ? (
+      {error != null ? (
+        <div className="px-4 text-center py-12">
+          <p className="text-muted mb-2">
+            {error.toLowerCase().includes("fetch") ? "Unable to load F1 data. Check your connection." : error}
+          </p>
+          <p className="text-[0.8125rem] text-muted">Ergast API may be slow or unreachable. Try again in a moment.</p>
+        </div>
+      ) : loading ? (
         <div className="px-4 text-center text-muted py-12">Loading…</div>
       ) : !showStandings ? (
         <>

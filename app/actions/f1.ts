@@ -2,8 +2,23 @@
 
 import { unstable_cache } from "next/cache";
 
-const ERGAST_BASE = "http://ergast.com/api/f1";
+const ERGAST_BASE = "https://ergast.com/api/f1";
 const OPENF1_BASE = "https://api.openf1.org/v1";
+const FETCH_TIMEOUT_MS = 15000;
+
+async function fetchWithTimeout(url: string): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    return res;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export interface F1Race {
   round: string;
@@ -124,7 +139,7 @@ export interface LiveRaceData {
 
 export const getF1Calendar = unstable_cache(
   async () => {
-    const res = await fetch(`${ERGAST_BASE}/current.json`);
+    const res = await fetchWithTimeout(`${ERGAST_BASE}/current.json`);
     if (!res.ok) throw new Error("Failed to fetch F1 calendar");
     const data = await res.json();
     return data.MRData.RaceTable.Races as F1Race[];
@@ -136,7 +151,7 @@ export const getF1Calendar = unstable_cache(
 export async function getRaceResults(round: string) {
   return unstable_cache(
     async () => {
-      const res = await fetch(`${ERGAST_BASE}/current/${round}/results.json`);
+      const res = await fetchWithTimeout(`${ERGAST_BASE}/current/${round}/results.json`);
       if (!res.ok) return null;
       const data = await res.json();
       const race = data.MRData?.RaceTable?.Races?.[0];
@@ -154,7 +169,7 @@ export async function getRaceResults(round: string) {
 export async function getQualifyingResults(round: string) {
   return unstable_cache(
     async () => {
-      const res = await fetch(`${ERGAST_BASE}/current/${round}/qualifying.json`);
+      const res = await fetchWithTimeout(`${ERGAST_BASE}/current/${round}/qualifying.json`);
       if (!res.ok) return null;
       const data = await res.json();
       const race = data.MRData?.RaceTable?.Races?.[0];
@@ -171,7 +186,7 @@ export async function getQualifyingResults(round: string) {
 
 export const getDriverStandings = unstable_cache(
   async () => {
-    const res = await fetch(`${ERGAST_BASE}/current/driverStandings.json`);
+    const res = await fetchWithTimeout(`${ERGAST_BASE}/current/driverStandings.json`);
     if (!res.ok) throw new Error("Failed to fetch driver standings");
     const data = await res.json();
     const list = data.MRData?.StandingsTable?.StandingsLists?.[0];
@@ -183,7 +198,7 @@ export const getDriverStandings = unstable_cache(
 
 export const getConstructorStandings = unstable_cache(
   async () => {
-    const res = await fetch(`${ERGAST_BASE}/current/constructorStandings.json`);
+    const res = await fetchWithTimeout(`${ERGAST_BASE}/current/constructorStandings.json`);
     if (!res.ok) throw new Error("Failed to fetch constructor standings");
     const data = await res.json();
     const list = data.MRData?.StandingsTable?.StandingsLists?.[0];
@@ -195,7 +210,7 @@ export const getConstructorStandings = unstable_cache(
 
 export const getNextRace = unstable_cache(
   async () => {
-    const res = await fetch(`${ERGAST_BASE}/current/next.json`);
+    const res = await fetchWithTimeout(`${ERGAST_BASE}/current/next.json`);
     if (!res.ok) return null;
     const data = await res.json();
     const races = data.MRData?.RaceTable?.Races ?? [];
@@ -205,9 +220,10 @@ export const getNextRace = unstable_cache(
   { revalidate: 3600 }
 );
 
-export async function findRaceByDate(date: Date): Promise<string | null> {
+export async function findRaceByDate(date: Date | string): Promise<string | null> {
   const calendar = await getF1Calendar();
-  const targetTime = date.getTime();
+  const d = typeof date === "string" ? new Date(date) : date;
+  const targetTime = d.getTime();
 
   const race = calendar.find((r) => {
     const raceDate = new Date(r.date);

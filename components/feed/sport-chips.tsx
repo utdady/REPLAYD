@@ -6,7 +6,7 @@ export type SportId = "football" | "f1" | "nfl" | "nba";
 
 const SPORTS: { id: SportId; label: string; comingSoon: boolean }[] = [
   { id: "football", label: "Football", comingSoon: false },
-  { id: "f1", label: "F1", comingSoon: true },
+  { id: "f1", label: "FORMULA 1", comingSoon: false },
   { id: "nfl", label: "NFL", comingSoon: true },
   { id: "nba", label: "NBA", comingSoon: true },
 ];
