@@ -14,8 +14,9 @@ export function F1NextRaceCard({ raceName, circuit, country, date, time }: F1Nex
   const [countdown, setCountdown] = useState("");
 
   useEffect(() => {
-    const raceTime = time ?? "14:00:00";
-    const raceDateTime = new Date(`${date}T${raceTime}Z`);
+    const rawTime = time ?? "14:00:00";
+    const normalized = rawTime.endsWith("Z") ? rawTime.slice(0, -1) : rawTime;
+    const raceDateTime = new Date(`${date}T${normalized}Z`);
 
     const updateCountdown = () => {
       const now = new Date();

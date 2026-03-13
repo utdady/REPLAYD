@@ -50,6 +50,19 @@ export function F1Section() {
 
   const isToday = selectedDate.getTime() === today.getTime();
 
+  // Load next race once so the card can live permanently above the date section.
+  useEffect(() => {
+    async function loadNextRace() {
+      try {
+        const next = await getNextRace();
+        setNextRace(next);
+      } catch {
+        // Swallow errors here; session/standings fetches will surface issues.
+      }
+    }
+    loadNextRace();
+  }, []);
+
   useEffect(() => {
     async function checkLiveRace() {
       if (isToday && !showStandings) {
@@ -83,8 +96,6 @@ export function F1Section() {
           setQualifyingResults(null);
         }
 
-        const next = await getNextRace();
-        setNextRace(next);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load F1 data");
         setRaceRound(null);
@@ -133,10 +144,29 @@ export function F1Section() {
         }
       : undefined;
 
+  const hasAnyResults =
+    (qualifyingResults?.results?.length ?? 0) > 0 ||
+    (raceResults?.results?.length ?? 0) > 0;
+
+  const nextRaceDate = nextRace ? new Date(nextRace.date) : null;
+
   return (
     <div className="pt-2 pb-8">
       <DateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} className="mt-4" />
-      <div className={`px-4 pt-6 ${showStandings || isToday ? "mb-4" : ""}`}>
+
+      {nextRace != null && (
+        <div className="px-4 pt-3">
+          <F1NextRaceCard
+            raceName={nextRace.raceName}
+            circuit={nextRace.Circuit.circuitName}
+            country={nextRace.Circuit.Location.country}
+            date={nextRace.date}
+            time={nextRace.time}
+          />
+        </div>
+      )}
+
+      <div className={`px-4 pt-4 ${showStandings || isToday ? "mb-4" : ""}`}>
         <div className="flex items-center justify-between">
           {showStandings ? (
             <SectionEyebrow className="text-[1.75rem]">{activeView}</SectionEyebrow>
@@ -167,39 +197,35 @@ export function F1Section() {
         <>
           {isLiveRace && <F1LiveRaceCard />}
 
-          {!isLiveRace && nextRace != null && !raceRound && (
-            <F1NextRaceCard
-              raceName={nextRace.raceName}
-              circuit={nextRace.Circuit.circuitName}
-              country={nextRace.Circuit.Location.country}
-              date={nextRace.date}
-              time={nextRace.time}
-            />
-          )}
-
           {raceRound != null ? (
-            <>
-              {qualifyingResults != null && (
-                <F1SessionCard
-                  title="Qualifying"
-                  time={qualifyingResults.race.Qualifying?.time ?? "—"}
-                  results={qualifyingResults.results}
-                  completed
-                />
-              )}
-              {raceResults != null && (
-                <F1SessionCard
-                  title="Race"
-                  time={raceResults.race.time ?? "—"}
-                  results={raceResults.results}
-                  fastestLap={fastestLap}
-                  completed
-                />
-              )}
-            </>
+            hasAnyResults ? (
+              <>
+                {qualifyingResults != null && qualifyingResults.results.length > 0 && (
+                  <F1SessionCard
+                    title="Qualifying"
+                    time={qualifyingResults.race.Qualifying?.time ?? "—"}
+                    results={qualifyingResults.results}
+                    completed
+                  />
+                )}
+                {raceResults != null && raceResults.results.length > 0 && (
+                  <F1SessionCard
+                    title="Race"
+                    time={raceResults.race.time ?? "—"}
+                    results={raceResults.results}
+                    fastestLap={fastestLap}
+                    completed
+                  />
+                )}
+              </>
+            ) : (
+              <div className="px-4 text-center text-muted py-12">
+                No FORMULA 1 sessions on this date.
+              </div>
+            )
           ) : !isLiveRace ? (
             <div className="px-4 text-center text-muted py-12">
-              No race on this date.
+              No FORMULA 1 sessions on this date.
               {nextRace != null && (
                 <div className="mt-2 text-[0.875rem]">
                   Next race: {nextRace.raceName} · {format(new Date(nextRace.date), "EEE d MMM")}

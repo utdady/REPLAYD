@@ -2,7 +2,9 @@
 
 import { unstable_cache } from "next/cache";
 
-const ERGAST_BASE = "https://ergast.com/api/f1";
+// Jolpica hosts a community mirror of the old Ergast API.
+// Endpoints and response shape are the same, so this is a drop-in.
+const JOLPICA_BASE = "https://api.jolpi.ca/ergast/f1";
 const OPENF1_BASE = "https://api.openf1.org/v1";
 const FETCH_TIMEOUT_MS = 15000;
 
@@ -139,7 +141,7 @@ export interface LiveRaceData {
 
 export const getF1Calendar = unstable_cache(
   async () => {
-    const res = await fetchWithTimeout(`${ERGAST_BASE}/current.json`);
+    const res = await fetchWithTimeout(`${JOLPICA_BASE}/current.json`);
     if (!res.ok) throw new Error("Failed to fetch F1 calendar");
     const data = await res.json();
     return data.MRData.RaceTable.Races as F1Race[];
@@ -151,7 +153,7 @@ export const getF1Calendar = unstable_cache(
 export async function getRaceResults(round: string) {
   return unstable_cache(
     async () => {
-      const res = await fetchWithTimeout(`${ERGAST_BASE}/current/${round}/results.json`);
+      const res = await fetchWithTimeout(`${JOLPICA_BASE}/current/${round}/results.json`);
       if (!res.ok) return null;
       const data = await res.json();
       const race = data.MRData?.RaceTable?.Races?.[0];
@@ -169,7 +171,7 @@ export async function getRaceResults(round: string) {
 export async function getQualifyingResults(round: string) {
   return unstable_cache(
     async () => {
-      const res = await fetchWithTimeout(`${ERGAST_BASE}/current/${round}/qualifying.json`);
+      const res = await fetchWithTimeout(`${JOLPICA_BASE}/current/${round}/qualifying.json`);
       if (!res.ok) return null;
       const data = await res.json();
       const race = data.MRData?.RaceTable?.Races?.[0];
@@ -186,7 +188,7 @@ export async function getQualifyingResults(round: string) {
 
 export const getDriverStandings = unstable_cache(
   async () => {
-    const res = await fetchWithTimeout(`${ERGAST_BASE}/current/driverStandings.json`);
+    const res = await fetchWithTimeout(`${JOLPICA_BASE}/current/driverStandings.json`);
     if (!res.ok) throw new Error("Failed to fetch driver standings");
     const data = await res.json();
     const list = data.MRData?.StandingsTable?.StandingsLists?.[0];
@@ -198,7 +200,7 @@ export const getDriverStandings = unstable_cache(
 
 export const getConstructorStandings = unstable_cache(
   async () => {
-    const res = await fetchWithTimeout(`${ERGAST_BASE}/current/constructorStandings.json`);
+    const res = await fetchWithTimeout(`${JOLPICA_BASE}/current/constructorStandings.json`);
     if (!res.ok) throw new Error("Failed to fetch constructor standings");
     const data = await res.json();
     const list = data.MRData?.StandingsTable?.StandingsLists?.[0];
@@ -210,7 +212,7 @@ export const getConstructorStandings = unstable_cache(
 
 export const getNextRace = unstable_cache(
   async () => {
-    const res = await fetchWithTimeout(`${ERGAST_BASE}/current/next.json`);
+    const res = await fetchWithTimeout(`${JOLPICA_BASE}/current/next.json`);
     if (!res.ok) return null;
     const data = await res.json();
     const races = data.MRData?.RaceTable?.Races ?? [];
@@ -223,13 +225,26 @@ export const getNextRace = unstable_cache(
 export async function findRaceByDate(date: Date | string): Promise<string | null> {
   const calendar = await getF1Calendar();
   const d = typeof date === "string" ? new Date(date) : date;
-  const targetTime = d.getTime();
+  const targetYmd = d.toISOString().split("T")[0];
 
   const race = calendar.find((r) => {
-    const raceDate = new Date(r.date);
-    const raceTime = raceDate.getTime();
-    const daysBefore = Math.floor((raceTime - targetTime) / (1000 * 60 * 60 * 24));
-    return daysBefore >= 0 && daysBefore <= 2;
+    const raceDays = [
+      r.FirstPractice?.date,
+      r.SecondPractice?.date,
+      r.ThirdPractice?.date,
+      // Jolpica adds Sprint-related keys as well
+      (r as any).SprintQualifying?.date,
+      r.Sprint?.date,
+      r.Qualifying?.date,
+      r.date,
+    ].filter(Boolean) as string[];
+
+    if (raceDays.length === 0) return false;
+
+    const minDay = raceDays.reduce((min, cur) => (cur < min ? cur : min), raceDays[0]);
+    const maxDay = raceDays.reduce((max, cur) => (cur > max ? cur : max), raceDays[0]);
+
+    return targetYmd >= minDay && targetYmd <= maxDay;
   });
 
   return race ? race.round : null;
